@@ -1,0 +1,458 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Reaction Rush ⚡</title>
+<style>
+  :root {
+    --accent: #38bdf8; --accent-soft: #38bdf855;
+    --bg1: #071b2e; --bg2: #0b2d4d; --bg3: #030a12;
+    --good: #4ade80; --bad: #f87171;
+  }
+  * { box-sizing: border-box; }
+  html, body { height: 100%; }
+  body {
+    margin: 0; font-family: "Segoe UI", system-ui, sans-serif; color: #f2f0ff;
+    display: flex; flex-direction: column; align-items: center;
+    padding: 28px 16px 60px; min-height: 100vh; overflow-x: hidden;
+    background: var(--bg3); position: relative;
+  }
+  .aurora {
+    position: fixed; inset: 0; z-index: -1;
+    background:
+      radial-gradient(40% 35% at 20% 25%, var(--bg2) 0%, transparent 70%),
+      radial-gradient(45% 40% at 80% 20%, var(--accent-soft) 0%, transparent 70%),
+      radial-gradient(50% 45% at 50% 85%, var(--bg1) 0%, transparent 70%),
+      var(--bg3);
+    animation: drift 18s ease-in-out infinite alternate;
+  }
+  @keyframes drift { 0% { filter: hue-rotate(0deg); } 50% { filter: hue-rotate(15deg) brightness(1.08); } 100% { filter: hue-rotate(-10deg); } }
+  header { text-align: center; margin-bottom: 18px; position: relative; width: 100%; max-width: 800px; }
+  .home-link { position: absolute; left: 0; top: 4px; font-size: 0.85rem; font-weight: 700; color: #cfc9ea; text-decoration: none; background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.16); padding: 6px 14px; border-radius: 999px; transition: background 0.2s; }
+  .home-link:hover { background: rgba(255,255,255,0.16); }
+  h1 { font-size: clamp(1.6rem, 4vw, 2.4rem); margin: 0; font-weight: 800; letter-spacing: 0.5px; background: linear-gradient(90deg, #38bdf8, #facc15, #f472b6); background-size: 200% auto; -webkit-background-clip: text; background-clip: text; color: transparent; animation: shine 6s linear infinite; }
+  @keyframes shine { to { background-position: 200% center; } }
+  #status { color: #b9b3d9; margin-top: 6px; font-size: 0.9rem; min-height: 1.2em; }
+  .glass { background: rgba(255, 255, 255, 0.06); border: 1px solid rgba(255, 255, 255, 0.14); -webkit-backdrop-filter: blur(18px); backdrop-filter: blur(18px); border-radius: 20px; box-shadow: 0 8px 32px rgba(0, 0, 0, 0.35); }
+  .hud { display: flex; gap: 18px; padding: 10px 22px; margin-bottom: 16px; font-weight: 700; font-size: 0.95rem; flex-wrap: wrap; justify-content: center; }
+  .hud-item { display: flex; align-items: center; gap: 6px; }
+  #heartsRow { letter-spacing: 2px; }
+  .rule-card { width: 480px; max-width: 100%; padding: 14px 24px; text-align: center; margin-bottom: 16px; }
+  .rule-topic { font-size: 0.75rem; text-transform: uppercase; letter-spacing: 1px; color: #b9b3d9; font-weight: 700; margin-bottom: 4px; }
+  .rule-text { font-size: 1.3rem; font-weight: 800; color: #38bdf8; }
+  .rule-sub { font-size: 0.82rem; color: #cfc9ea; margin-top: 4px; }
+  .timer-bar { margin-top: 10px; height: 8px; border-radius: 999px; background: rgba(255, 255, 255, 0.12); overflow: hidden; }
+  .timer-fill { height: 100%; width: 100%; background: linear-gradient(90deg, #38bdf8, #facc15); transition: width 0.08s linear, background 0.3s; }
+  .stage { position: relative; width: 720px; max-width: 100%; aspect-ratio: 16 / 10; padding: 10px; }
+  .stage-inner { position: relative; width: 100%; height: 100%; border-radius: 14px; overflow: hidden; box-shadow: inset 0 0 0 2px rgba(255, 255, 255, 0.12); background: #050912; }
+  video { position: absolute; top: 0; left: 0; width: 100%; height: 100%; object-fit: cover; transform: scaleX(-1); opacity: 0.55; }
+  .target-layer { position: absolute; inset: 0; z-index: 4; }
+  .target {
+    position: absolute; width: 78px; height: 78px; border-radius: 50%; transform: translate(-50%, -50%);
+    background: rgba(255,255,255,0.1); border: 3px solid rgba(255,255,255,0.35);
+    display: flex; align-items: center; justify-content: center; font-size: 1.7rem; font-weight: 800; color: #fff;
+    cursor: pointer; transition: transform 0.15s, background 0.15s, border-color 0.15s;
+  }
+  .target:hover { transform: translate(-50%, -50%) scale(1.08); border-color: #fff; }
+  .target.good { background: rgba(74,222,128,0.5); border-color: #4ade80; pointer-events: none; }
+  .target.bad { background: rgba(248,113,113,0.5); border-color: #f87171; pointer-events: none; }
+  .target.disabled { opacity: 0.35; pointer-events: none; }
+  .cursor-dot {
+    position: absolute; width: 26px; height: 26px; border-radius: 50%;
+    background: radial-gradient(circle, #fff 0%, #38bdf8 70%); box-shadow: 0 0 14px 4px #38bdf899;
+    transform: translate(-50%, -50%); z-index: 6; pointer-events: none; display: none;
+  }
+  .stage-badge { position: absolute; top: 18px; left: 18px; padding: 6px 14px; border-radius: 999px; font-size: 0.8rem; font-weight: 600; background: rgba(0, 0, 0, 0.45); border: 1px solid rgba(255, 255, 255, 0.2); display: flex; align-items: center; gap: 8px; z-index: 5; }
+  .dot { width: 9px; height: 9px; border-radius: 50%; background: #888; box-shadow: 0 0 8px 2px #8888; transition: background 0.2s, box-shadow 0.2s; }
+  .dot.live { background: #4ade80; box-shadow: 0 0 10px 3px #4ade8099; }
+  .stage-overlay { position: absolute; inset: 10px; z-index: 10; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 14px; text-align: center; padding: 20px; background: rgba(3, 10, 18, 0.82); border-radius: 14px; }
+  .stage-overlay h2 { margin: 0; font-size: 1.5rem; }
+  .stage-overlay p { margin: 0; color: #cfc9ea; max-width: 460px; font-size: 0.9rem; }
+  .big-btn { padding: 14px 30px; border-radius: 999px; border: none; cursor: pointer; font-size: 1.05rem; font-weight: 800; color: #06210f; background: linear-gradient(90deg, #38bdf8, #facc15); box-shadow: 0 6px 22px rgba(56, 189, 248, 0.45); transition: transform 0.15s ease; }
+  .big-btn:hover { transform: scale(1.05); }
+  .big-btn:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
+  .feedback-banner { margin-top: 14px; min-height: 1.6em; font-size: 1.1rem; font-weight: 800; text-align: center; }
+  .feedback-banner.good { color: var(--good); }
+  .feedback-banner.bad { color: var(--bad); }
+  #confettiCanvas { position: fixed; inset: 0; z-index: 999; pointer-events: none; }
+  footer { margin-top: 26px; font-size: 0.78rem; color: #8d87ab; text-align: center; max-width: 620px; line-height: 1.6; }
+  @media (max-width: 640px) { .stage, .rule-card { width: 100%; } }
+</style>
+</head>
+<body>
+  <div class="aurora"></div>
+  <canvas id="confettiCanvas"></canvas>
+
+  <header>
+    <a class="home-link" href="index.html">← Home</a>
+    <h1>⚡ Reaction Rush</h1>
+    <div id="status">Loading model…</div>
+  </header>
+
+  <div class="hud glass">
+    <div class="hud-item">⭐ <span id="scoreVal">0</span></div>
+    <div class="hud-item">🔥 <span id="streakVal">0</span></div>
+    <div class="hud-item" id="heartsRow">❤️❤️❤️</div>
+    <div class="hud-item">📋 <span id="qIndexVal">0</span>/<span id="qTotalVal">8</span></div>
+  </div>
+
+  <div class="rule-card glass">
+    <div class="rule-topic">Tap only…</div>
+    <div class="rule-text" id="ruleText">Get Ready!</div>
+    <div class="rule-sub" id="ruleSub">Press Start to begin!</div>
+    <div class="timer-bar"><div class="timer-fill" id="timerFill"></div></div>
+  </div>
+
+  <div class="stage glass">
+    <div class="stage-badge"><span class="dot" id="liveDot"></span><span id="liveText">Idle</span></div>
+    <div class="stage-inner">
+      <video id="video" autoplay playsinline muted></video>
+      <div class="target-layer" id="targetLayer"></div>
+      <div class="cursor-dot" id="cursorDot"></div>
+    </div>
+    <div class="stage-overlay" id="startOverlay">
+      <h2>⚡ Ready for speed math?</h2>
+      <p>Point at the glowing targets with your index finger (or click them with your mouse) — but only tap the numbers that match the rule! Wrong taps cost a life.</p>
+      <button class="big-btn" id="startBtn" disabled>Loading model…</button>
+    </div>
+    <div class="stage-overlay" id="endOverlay" style="display:none;">
+      <h2 id="endTitle">🎉 Great reflexes!</h2>
+      <p id="endSubtitle">You finished the challenge.</p>
+      <div style="font-size:2.2rem; font-weight:800;" id="endScore">0</div>
+      <button class="big-btn" id="playAgainBtn">Play Again</button>
+    </div>
+  </div>
+
+  <div class="feedback-banner" id="feedbackBanner"></div>
+
+  <footer>
+    Point your <strong>index finger</strong> at a target and hold briefly to tap it, or just click with your mouse.
+    Only tap numbers that match the rule at the top — wrong taps cost a life!
+  </footer>
+
+<script type="module">
+import { HandLandmarker, FilesetResolver } from "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.14";
+
+const video = document.getElementById("video");
+const statusEl = document.getElementById("status");
+const liveDot = document.getElementById("liveDot");
+const liveText = document.getElementById("liveText");
+const scoreVal = document.getElementById("scoreVal");
+const streakVal = document.getElementById("streakVal");
+const heartsRow = document.getElementById("heartsRow");
+const qIndexVal = document.getElementById("qIndexVal");
+const qTotalVal = document.getElementById("qTotalVal");
+const ruleText = document.getElementById("ruleText");
+const ruleSub = document.getElementById("ruleSub");
+const timerFill = document.getElementById("timerFill");
+const targetLayer = document.getElementById("targetLayer");
+const cursorDot = document.getElementById("cursorDot");
+const startOverlay = document.getElementById("startOverlay");
+const startBtn = document.getElementById("startBtn");
+const endOverlay = document.getElementById("endOverlay");
+const endTitle = document.getElementById("endTitle");
+const endSubtitle = document.getElementById("endSubtitle");
+const endScore = document.getElementById("endScore");
+const playAgainBtn = document.getElementById("playAgainBtn");
+const feedbackBanner = document.getElementById("feedbackBanner");
+
+function randInt(min, max) { return Math.floor(Math.random() * (max - min + 1)) + min; }
+function pick(arr) { return arr[randInt(0, arr.length - 1)]; }
+function isPrime(n) {
+  if (n < 2) return false;
+  for (let i = 2; i * i <= n; i++) if (n % i === 0) return false;
+  return true;
+}
+
+const RULES = [
+  { label: "Multiples of 3", sub: "e.g. 3, 6, 9, 12…", test: (n) => n % 3 === 0 && n !== 0 },
+  { label: "Prime Numbers", sub: "only divisible by 1 and itself", test: isPrime },
+  { label: "Even Numbers", sub: "numbers divisible by 2", test: (n) => n % 2 === 0 },
+  { label: "Odd Numbers", sub: "numbers not divisible by 2", test: (n) => n % 2 === 1 },
+  { label: "Numbers Greater Than 10", sub: "bigger than 10", test: (n) => n > 10 },
+  { label: "Numbers Less Than 8", sub: "smaller than 8", test: (n) => n < 8 },
+  { label: "Multiples of 4", sub: "e.g. 4, 8, 12, 16…", test: (n) => n % 4 === 0 && n !== 0 },
+  { label: "Square Numbers", sub: "e.g. 1, 4, 9, 16…", test: (n) => Number.isInteger(Math.sqrt(n)) },
+];
+
+const POSITION_SLOTS = [[15,22],[50,14],[85,22],[15,78],[50,86],[85,78]];
+
+const GOOD_PHRASES = ["Awesome!", "Fast hands!", "Lightning reflexes!", "Nice tap!", "Boom!"];
+const BAD_PHRASES = ["Oops, wrong one!", "Careful!", "Not quite!", "Watch the rule!"];
+
+const TOTAL_ROUNDS = 8;
+const ROUND_TIME_MS = 12000;
+const DWELL_MS = 500;
+let state = "loading";
+let handLandmarker = null;
+let roundIndex = 0;
+let score = 0, streak = 0, lives = 3;
+let roundStartTime = 0;
+let currentRule = null;
+let targets = [];
+let correctNeeded = 0, correctTapped = 0;
+let roundActive = false;
+let dwellId = null, dwellStart = 0;
+let audioCtx = null;
+
+function ensureAudio() { if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)(); return audioCtx; }
+function playTone(freq, delay = 0) {
+  try {
+    const ctxA = ensureAudio();
+    const t0 = ctxA.currentTime + delay;
+    const osc = ctxA.createOscillator();
+    const gain = ctxA.createGain();
+    osc.type = "sine";
+    osc.frequency.value = freq;
+    gain.gain.setValueAtTime(0.0001, t0);
+    gain.gain.exponentialRampToValueAtTime(0.12, t0 + 0.02);
+    gain.gain.exponentialRampToValueAtTime(0.0001, t0 + 0.28);
+    osc.connect(gain).connect(ctxA.destination);
+    osc.start(t0);
+    osc.stop(t0 + 0.3);
+  } catch (e) { /* audio not ready yet */ }
+}
+
+function updateHUD() {
+  scoreVal.textContent = score;
+  streakVal.textContent = streak;
+  qIndexVal.textContent = Math.min(roundIndex, TOTAL_ROUNDS);
+  qTotalVal.textContent = TOTAL_ROUNDS;
+  heartsRow.textContent = "❤️".repeat(Math.max(0, lives)) + "🤍".repeat(Math.max(0, 3 - lives));
+}
+function showFeedback(correct, text) {
+  feedbackBanner.textContent = (correct ? "✅ " : "❌ ") + text;
+  feedbackBanner.className = "feedback-banner " + (correct ? "good" : "bad");
+}
+
+function buildRound() {
+  currentRule = pick(RULES);
+  let numbers, matchCount;
+  do {
+    const set = new Set();
+    while (set.size < 6) set.add(randInt(1, 20));
+    numbers = [...set];
+    matchCount = numbers.filter(currentRule.test).length;
+  } while (matchCount < 2 || matchCount > 4);
+
+  correctNeeded = matchCount;
+  correctTapped = 0;
+  const slots = [...POSITION_SLOTS];
+  targetLayer.innerHTML = "";
+  targets = numbers.map((n, i) => {
+    const [x, y] = slots[i];
+    const el = document.createElement("div");
+    el.className = "target";
+    el.textContent = n;
+    el.style.left = x + "%";
+    el.style.top = y + "%";
+    el.addEventListener("click", () => tapTarget(id));
+    targetLayer.appendChild(el);
+    const id = i;
+    el.dataset.id = id;
+    return { id, n, match: currentRule.test(n), el, done: false };
+  });
+}
+
+function nextRound() {
+  roundIndex++;
+  updateHUD();
+  ruleText.textContent = currentRuleLabel();
+  buildRound();
+  ruleText.textContent = currentRule.label;
+  ruleSub.textContent = currentRule.sub + ` — find ${correctNeeded}`;
+  roundStartTime = performance.now();
+  roundActive = true;
+  feedbackBanner.className = "feedback-banner";
+  feedbackBanner.textContent = "";
+  timerFill.style.background = "linear-gradient(90deg, #38bdf8, #facc15)";
+}
+function currentRuleLabel() { return currentRule ? currentRule.label : "Get Ready!"; }
+
+function tapTarget(id) {
+  if (!roundActive || state !== "playing") return;
+  const t = targets.find((t) => t.id === id);
+  if (!t || t.done) return;
+  t.done = true;
+  if (t.match) {
+    t.el.classList.add("good");
+    score += 5 + streak;
+    streak++;
+    correctTapped++;
+    playTone(660);
+    showFeedback(true, pick(GOOD_PHRASES));
+    burstConfetti(18);
+  } else {
+    t.el.classList.add("bad");
+    lives--;
+    streak = 0;
+    playTone(160);
+    showFeedback(false, pick(BAD_PHRASES));
+  }
+  updateHUD();
+  if (lives <= 0) { roundActive = false; setTimeout(gameOver, 900); return; }
+  if (correctTapped >= correctNeeded) { roundActive = false; setTimeout(finishRound, 900); }
+}
+
+function finishRound() {
+  targets.forEach((t) => { if (!t.done) t.el.classList.add("disabled"); });
+  if (roundIndex >= TOTAL_ROUNDS) return victory();
+  state = "playing";
+  nextRound();
+}
+
+function gameOver() {
+  state = "ended";
+  endTitle.textContent = "💫 Game Over";
+  endSubtitle.textContent = "Out of lives — but speed comes with practice!";
+  endScore.textContent = `⭐ ${score} points`;
+  endOverlay.style.display = "flex";
+}
+function victory() {
+  state = "ended";
+  endTitle.textContent = "🏆 Reaction Rush Complete!";
+  endSubtitle.textContent = "You blazed through all 8 rounds!";
+  endScore.textContent = `⭐ ${score} points`;
+  endOverlay.style.display = "flex";
+  burstConfetti(90);
+}
+playAgainBtn.addEventListener("click", () => {
+  endOverlay.style.display = "none";
+  score = 0; streak = 0; lives = 3; roundIndex = 0;
+  updateHUD();
+  state = "playing";
+  nextRound();
+  requestAnimationFrame(loop);
+});
+
+// ---------- confetti ----------
+const confettiCanvas = document.getElementById("confettiCanvas");
+const cctx = confettiCanvas.getContext("2d");
+let confettiParticles = [];
+let confettiRAF = null;
+function resizeConfetti() { confettiCanvas.width = window.innerWidth; confettiCanvas.height = window.innerHeight; }
+window.addEventListener("resize", resizeConfetti);
+resizeConfetti();
+function burstConfetti(count = 45) {
+  const colors = ["#38bdf8", "#facc15", "#4ade80", "#f472b6", "#a78bfa"];
+  for (let i = 0; i < count; i++) {
+    confettiParticles.push({
+      x: confettiCanvas.width / 2 + (Math.random() - 0.5) * 200,
+      y: confettiCanvas.height * 0.35,
+      vx: (Math.random() - 0.5) * 8, vy: -Math.random() * 8 - 4,
+      size: 5 + Math.random() * 5, color: colors[Math.floor(Math.random() * colors.length)],
+      rot: Math.random() * Math.PI, vrot: (Math.random() - 0.5) * 0.3, life: 0,
+    });
+  }
+  if (!confettiRAF) confettiRAF = requestAnimationFrame(confettiLoop);
+}
+function confettiLoop() {
+  cctx.clearRect(0, 0, confettiCanvas.width, confettiCanvas.height);
+  confettiParticles.forEach((p) => {
+    p.vy += 0.25; p.x += p.vx; p.y += p.vy; p.rot += p.vrot; p.life++;
+    cctx.save(); cctx.translate(p.x, p.y); cctx.rotate(p.rot);
+    cctx.fillStyle = p.color; cctx.fillRect(-p.size / 2, -p.size / 2, p.size, p.size); cctx.restore();
+  });
+  confettiParticles = confettiParticles.filter((p) => p.y < confettiCanvas.height + 30 && p.life < 240);
+  confettiRAF = confettiParticles.length > 0 ? requestAnimationFrame(confettiLoop) : null;
+}
+
+// ---------- fingertip cursor + dwell-to-tap ----------
+function loop() {
+  if (state !== "playing") return;
+  const now = performance.now();
+  const w = video.parentElement.clientWidth, h = video.parentElement.clientHeight;
+
+  if (video.readyState >= 2 && handLandmarker) {
+    const result = handLandmarker.detectForVideo(video, now);
+    if (result.landmarks && result.landmarks.length > 0) {
+      const tip = result.landmarks[0][8];
+      const cx = (1 - tip.x) * w;
+      const cy = tip.y * h;
+      cursorDot.style.display = "block";
+      cursorDot.style.left = cx + "px";
+      cursorDot.style.top = cy + "px";
+      liveText.textContent = "Live · tracking";
+
+      let hovered = null;
+      for (const t of targets) {
+        if (t.done) continue;
+        const rect = { x: (parseFloat(t.el.style.left) / 100) * w, y: (parseFloat(t.el.style.top) / 100) * h };
+        if (Math.hypot(rect.x - cx, rect.y - cy) < 46) { hovered = t.id; break; }
+      }
+      if (hovered !== null) {
+        if (dwellId !== hovered) { dwellId = hovered; dwellStart = now; }
+        else if (now - dwellStart >= DWELL_MS) { tapTarget(hovered); dwellId = null; }
+      } else {
+        dwellId = null;
+      }
+    } else {
+      cursorDot.style.display = "none";
+      dwellId = null;
+      liveText.textContent = "Live";
+    }
+  }
+
+  const elapsed = now - roundStartTime;
+  const remain = Math.max(0, 1 - elapsed / ROUND_TIME_MS);
+  timerFill.style.width = remain * 100 + "%";
+  if (remain <= 0.25) timerFill.style.background = "linear-gradient(90deg, #f87171, #fca5a5)";
+  if (roundActive && remain <= 0) {
+    roundActive = false;
+    showFeedback(correctTapped >= correctNeeded, `Time's up! You found ${correctTapped}/${correctNeeded}.`);
+    setTimeout(finishRound, 1200);
+  }
+
+  requestAnimationFrame(loop);
+}
+
+async function loadModel() {
+  const fileset = await FilesetResolver.forVisionTasks("https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.14/wasm");
+  handLandmarker = await HandLandmarker.createFromOptions(fileset, {
+    baseOptions: {
+      modelAssetPath: "https://storage.googleapis.com/mediapipe-models/hand_landmarker/hand_landmarker/float16/1/hand_landmarker.task",
+      delegate: "GPU",
+    },
+    runningMode: "VIDEO",
+    numHands: 1,
+  });
+  state = "idle";
+  statusEl.textContent = "Model ready — start the camera to play!";
+  startBtn.disabled = false;
+  startBtn.textContent = "⚡ Start Reaction Rush";
+}
+
+startBtn.addEventListener("click", async () => {
+  startBtn.disabled = true;
+  startBtn.textContent = "Starting camera…";
+  try {
+    const stream = await navigator.mediaDevices.getUserMedia({ video: { width: 640, height: 480 } });
+    video.srcObject = stream;
+    await new Promise((res) => (video.onloadedmetadata = res));
+    video.play();
+    liveDot.classList.add("live");
+    startOverlay.style.display = "none";
+    statusEl.textContent = "Point at targets that match the rule!";
+    score = 0; streak = 0; lives = 3; roundIndex = 0;
+    updateHUD();
+    state = "playing";
+    nextRound();
+    requestAnimationFrame(loop);
+  } catch (err) {
+    statusEl.textContent = "Camera unavailable — click the targets with your mouse to play.";
+    startOverlay.style.display = "none";
+    score = 0; streak = 0; lives = 3; roundIndex = 0;
+    updateHUD();
+    state = "playing";
+    nextRound();
+  }
+});
+
+loadModel().catch((err) => {
+  statusEl.textContent = "Error loading model: " + err.message;
+  console.error(err);
+});
+</script>
+</body>
+</html>

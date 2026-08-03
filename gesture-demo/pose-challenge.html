@@ -1,0 +1,792 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Pose Challenge 💃</title>
+<style>
+  :root {
+    --accent: #ff5da2;
+    --accent-soft: #ff5da255;
+    --bg1: #200a2e;
+    --bg2: #3d0b2e;
+    --bg3: #0a0512;
+    --good: #4ade80;
+    --bad: #f87171;
+  }
+
+  * { box-sizing: border-box; }
+  html, body { height: 100%; }
+
+  body {
+    margin: 0;
+    font-family: "Segoe UI", system-ui, sans-serif;
+    color: #f2f0ff;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 28px 16px 60px;
+    min-height: 100vh;
+    overflow-x: hidden;
+    background: var(--bg3);
+    position: relative;
+  }
+
+  .aurora {
+    position: fixed;
+    inset: 0;
+    z-index: -1;
+    background:
+      radial-gradient(40% 35% at 20% 25%, var(--bg2) 0%, transparent 70%),
+      radial-gradient(45% 40% at 80% 20%, var(--accent-soft) 0%, transparent 70%),
+      radial-gradient(50% 45% at 50% 85%, var(--bg1) 0%, transparent 70%),
+      var(--bg3);
+    animation: drift 18s ease-in-out infinite alternate;
+  }
+  @keyframes drift {
+    0%   { filter: hue-rotate(0deg) brightness(1); }
+    50%  { filter: hue-rotate(15deg) brightness(1.08); }
+    100% { filter: hue-rotate(-10deg) brightness(1); }
+  }
+
+  header { text-align: center; margin-bottom: 18px; position: relative; width: 100%; max-width: 800px; }
+  .home-link {
+    position: absolute;
+    left: 0;
+    top: 4px;
+    font-size: 0.85rem;
+    font-weight: 700;
+    color: #cfc9ea;
+    text-decoration: none;
+    background: rgba(255,255,255,0.08);
+    border: 1px solid rgba(255,255,255,0.16);
+    padding: 6px 14px;
+    border-radius: 999px;
+    transition: background 0.2s;
+  }
+  .home-link:hover { background: rgba(255,255,255,0.16); }
+  h1 {
+    font-size: clamp(1.6rem, 4vw, 2.4rem);
+    margin: 0;
+    font-weight: 800;
+    letter-spacing: 0.5px;
+    background: linear-gradient(90deg, #ff8fc7, #ffd166, #60a5fa);
+    background-size: 200% auto;
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+    animation: shine 6s linear infinite;
+  }
+  @keyframes shine { to { background-position: 200% center; } }
+  #status { color: #b9b3d9; margin-top: 6px; font-size: 0.9rem; min-height: 1.2em; }
+
+  .glass {
+    background: rgba(255, 255, 255, 0.06);
+    border: 1px solid rgba(255, 255, 255, 0.14);
+    -webkit-backdrop-filter: blur(18px);
+    backdrop-filter: blur(18px);
+    border-radius: 20px;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.35);
+  }
+
+  .hud {
+    display: flex;
+    gap: 18px;
+    padding: 10px 22px;
+    margin-bottom: 16px;
+    font-weight: 700;
+    font-size: 0.95rem;
+    flex-wrap: wrap;
+    justify-content: center;
+  }
+  .hud-item { display: flex; align-items: center; gap: 6px; }
+  #heartsRow { letter-spacing: 2px; }
+
+  .arena {
+    display: flex;
+    gap: 16px;
+    width: 900px;
+    max-width: 100%;
+    align-items: stretch;
+    flex-wrap: wrap;
+    justify-content: center;
+  }
+
+  .pose-card {
+    width: 260px;
+    padding: 18px;
+    text-align: center;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+  }
+  .pose-topic { font-size: 0.75rem; text-transform: uppercase; letter-spacing: 1px; color: #b9b3d9; font-weight: 700; }
+  .pose-name { font-size: 1.3rem; font-weight: 800; }
+  .pose-hint { font-size: 0.85rem; color: #cfc9ea; }
+  .stick-svg { width: 140px; height: 170px; }
+  .timer-bar {
+    width: 100%;
+    margin-top: 4px;
+    height: 8px;
+    border-radius: 999px;
+    background: rgba(255, 255, 255, 0.12);
+    overflow: hidden;
+  }
+  .timer-fill {
+    height: 100%;
+    width: 100%;
+    background: linear-gradient(90deg, #ff8fc7, #ffd166);
+    transition: width 0.08s linear, background 0.3s;
+  }
+
+  .stage {
+    position: relative;
+    width: 480px;
+    max-width: 100%;
+    aspect-ratio: 4 / 3;
+    padding: 10px;
+  }
+  .stage-inner {
+    position: relative;
+    width: 100%;
+    height: 100%;
+    border-radius: 14px;
+    overflow: hidden;
+    box-shadow: inset 0 0 0 2px rgba(255, 255, 255, 0.12);
+  }
+  video, canvas.layer {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    transform: scaleX(-1);
+  }
+  canvas.layer { pointer-events: none; }
+
+  .stage-badge {
+    position: absolute;
+    top: 18px;
+    left: 18px;
+    padding: 6px 14px;
+    border-radius: 999px;
+    font-size: 0.8rem;
+    font-weight: 600;
+    background: rgba(0, 0, 0, 0.45);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    z-index: 5;
+  }
+  .dot {
+    width: 9px; height: 9px; border-radius: 50%;
+    background: #888; box-shadow: 0 0 8px 2px #8888;
+    transition: background 0.2s, box-shadow 0.2s;
+  }
+  .dot.live { background: #4ade80; box-shadow: 0 0 10px 3px #4ade8099; }
+
+  .match-badge-wrap {
+    position: absolute;
+    left: 50%;
+    bottom: 14px;
+    transform: translateX(-50%);
+    z-index: 6;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 6px;
+  }
+  .hold-ring {
+    width: 60px; height: 60px; border-radius: 50%;
+    background: conic-gradient(var(--accent) calc(var(--p, 0) * 360deg), rgba(255,255,255,0.18) 0deg);
+    display: flex; align-items: center; justify-content: center;
+    transition: background 0.05s linear;
+  }
+  .hold-ring-inner {
+    width: 48px; height: 48px; border-radius: 50%;
+    background: rgba(10, 6, 30, 0.88);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 1.4rem;
+  }
+  .hold-caption {
+    font-size: 0.75rem;
+    color: #cfc9ea;
+    font-weight: 700;
+    background: rgba(0,0,0,0.4);
+    padding: 3px 10px;
+    border-radius: 999px;
+  }
+
+  .stage-overlay {
+    position: absolute;
+    inset: 10px;
+    z-index: 10;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 14px;
+    text-align: center;
+    padding: 20px;
+    background: rgba(5, 3, 15, 0.78);
+    border-radius: 14px;
+  }
+  .stage-overlay h2 { margin: 0; font-size: 1.4rem; }
+  .stage-overlay p { margin: 0; color: #cfc9ea; max-width: 420px; font-size: 0.9rem; }
+  .big-btn {
+    padding: 14px 30px;
+    border-radius: 999px;
+    border: none;
+    cursor: pointer;
+    font-size: 1.05rem;
+    font-weight: 800;
+    color: #fff;
+    background: linear-gradient(90deg, #ff8fc7, #ffd166);
+    box-shadow: 0 6px 22px rgba(255, 93, 162, 0.45);
+    transition: transform 0.15s ease;
+  }
+  .big-btn:hover { transform: scale(1.05); }
+  .big-btn:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
+
+  .feedback-banner {
+    margin-top: 14px;
+    min-height: 1.6em;
+    font-size: 1.1rem;
+    font-weight: 800;
+    text-align: center;
+  }
+  .feedback-banner.good { color: var(--good); }
+  .feedback-banner.bad { color: var(--bad); }
+
+  .skip-link {
+    margin-top: 8px;
+    font-size: 0.78rem;
+    color: #8d87ab;
+    background: none;
+    border: none;
+    text-decoration: underline;
+    cursor: pointer;
+  }
+
+  #confettiCanvas {
+    position: fixed;
+    inset: 0;
+    z-index: 999;
+    pointer-events: none;
+  }
+
+  footer {
+    margin-top: 26px;
+    font-size: 0.78rem;
+    color: #8d87ab;
+    text-align: center;
+    max-width: 620px;
+    line-height: 1.6;
+  }
+
+  @media (max-width: 640px) {
+    .stage { width: 100%; }
+  }
+</style>
+</head>
+<body>
+  <div class="aurora"></div>
+  <canvas id="confettiCanvas"></canvas>
+
+  <header>
+    <a class="home-link" href="index.html">← Home</a>
+    <h1>💃 Pose Challenge</h1>
+    <div id="status">Loading model…</div>
+  </header>
+
+  <div class="hud glass">
+    <div class="hud-item">⭐ <span id="scoreVal">0</span></div>
+    <div class="hud-item">🔥 <span id="streakVal">0</span></div>
+    <div class="hud-item" id="heartsRow">❤️❤️❤️</div>
+    <div class="hud-item">📋 <span id="qIndexVal">0</span>/<span id="qTotalVal">8</span></div>
+  </div>
+
+  <div class="arena">
+    <div class="pose-card glass">
+      <div class="pose-topic">Strike this pose!</div>
+      <svg class="stick-svg" id="stickSvg" viewBox="0 0 120 150"></svg>
+      <div class="pose-name" id="poseName"><span id="poseEmoji">🕺</span> <span id="poseNameText">Get Ready</span></div>
+      <div class="pose-hint" id="poseHint">Press Start to begin the dance-off!</div>
+      <div class="timer-bar"><div class="timer-fill" id="timerFill"></div></div>
+    </div>
+
+    <div class="stage glass">
+      <div class="stage-badge"><span class="dot" id="liveDot"></span><span id="liveText">Idle</span></div>
+      <div class="stage-inner">
+        <video id="video" autoplay playsinline muted></video>
+        <canvas id="overlay" class="layer"></canvas>
+      </div>
+      <div class="match-badge-wrap">
+        <div class="hold-ring" id="holdRing"><div class="hold-ring-inner"><span id="matchEmoji">🤔</span></div></div>
+        <div class="hold-caption" id="holdCaption">Step into frame!</div>
+      </div>
+      <div class="stage-overlay" id="startOverlay">
+        <h2>🕺 Ready to dance?</h2>
+        <p>Copy the pose shown on the card using your whole body. Hold it steady and I'll catch it! Stand back so your shoulders, elbows and hands are all visible.</p>
+        <button class="big-btn" id="startBtn" disabled>Loading model…</button>
+      </div>
+      <div class="stage-overlay" id="endOverlay" style="display:none;">
+        <h2 id="endTitle">🎉 Nice moves!</h2>
+        <p id="endSubtitle">You finished the challenge.</p>
+        <div style="font-size:2.2rem; font-weight:800;" id="endScore">0</div>
+        <button class="big-btn" id="playAgainBtn">Play Again</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="feedback-banner" id="feedbackBanner"></div>
+  <button class="skip-link" id="skipBtn" style="display:none;">No camera? Tap here to auto-pass this pose</button>
+
+  <footer>
+    Stand back from the camera so your <strong>shoulders, elbows and wrists</strong> are all in view.
+    Match the stick-figure pose and hold it steady until the ring fills up.
+  </footer>
+
+<script type="module">
+import { PoseLandmarker, FilesetResolver } from "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.14";
+
+const video = document.getElementById("video");
+const overlay = document.getElementById("overlay");
+const octx = overlay.getContext("2d");
+const statusEl = document.getElementById("status");
+const liveDot = document.getElementById("liveDot");
+const liveText = document.getElementById("liveText");
+const scoreVal = document.getElementById("scoreVal");
+const streakVal = document.getElementById("streakVal");
+const heartsRow = document.getElementById("heartsRow");
+const qIndexVal = document.getElementById("qIndexVal");
+const qTotalVal = document.getElementById("qTotalVal");
+const poseEmoji = document.getElementById("poseEmoji");
+const poseNameText = document.getElementById("poseNameText");
+const poseHint = document.getElementById("poseHint");
+const stickSvg = document.getElementById("stickSvg");
+const timerFill = document.getElementById("timerFill");
+const holdRing = document.getElementById("holdRing");
+const matchEmoji = document.getElementById("matchEmoji");
+const holdCaption = document.getElementById("holdCaption");
+const startOverlay = document.getElementById("startOverlay");
+const startBtn = document.getElementById("startBtn");
+const endOverlay = document.getElementById("endOverlay");
+const endTitle = document.getElementById("endTitle");
+const endSubtitle = document.getElementById("endSubtitle");
+const endScore = document.getElementById("endScore");
+const playAgainBtn = document.getElementById("playAgainBtn");
+const feedbackBanner = document.getElementById("feedbackBanner");
+const skipBtn = document.getElementById("skipBtn");
+
+// ---------- pose landmark indices (MediaPipe Pose, 33 points) ----------
+const NOSE = 0, L_SHO = 11, R_SHO = 12, L_ELB = 13, R_ELB = 14, L_WRI = 15, R_WRI = 16, L_HIP = 23, R_HIP = 24;
+function dist(a, b) { return Math.hypot(a.x - b.x, a.y - b.y); }
+function shoulderWidth(lm) { return dist(lm[L_SHO], lm[R_SHO]); }
+
+// ---------- pose library: side-agnostic geometric rules + a matching stick figure ----------
+const POSES = {
+  armsup: {
+    name: "Arms Up", emoji: "🙌", hint: "Reach both hands high above your head!",
+    arms: { lE: [38,26], lW: [30,4], rE: [82,26], rW: [90,4] },
+    match(lm) {
+      const sw = shoulderWidth(lm);
+      return lm[L_WRI].y < lm[L_SHO].y - sw * 0.3 && lm[R_WRI].y < lm[R_SHO].y - sw * 0.3;
+    },
+  },
+  tpose: {
+    name: "T-Pose", emoji: "🤖", hint: "Stretch both arms straight out to the sides!",
+    arms: { lE: [20,46], lW: [0,46], rE: [100,46], rW: [120,46] },
+    match(lm) {
+      const sw = shoulderWidth(lm);
+      const lLevel = Math.abs(lm[L_WRI].y - lm[L_SHO].y) < sw * 0.45;
+      const rLevel = Math.abs(lm[R_WRI].y - lm[R_SHO].y) < sw * 0.45;
+      const lOut = Math.abs(lm[L_WRI].x - lm[L_SHO].x) > sw * 0.7;
+      const rOut = Math.abs(lm[R_WRI].x - lm[R_SHO].x) > sw * 0.7;
+      return lLevel && rLevel && lOut && rOut;
+    },
+  },
+  onearmup: {
+    name: "One Arm Up", emoji: "☝️", hint: "Shoot one hand straight up, keep the other down!",
+    arms: { lE: [40,70], lW: [34,92], rE: [82,26], rW: [90,4] },
+    match(lm) {
+      const sw = shoulderWidth(lm);
+      const leftUp = lm[L_WRI].y < lm[NOSE].y && lm[R_WRI].y > lm[R_SHO].y + sw * 0.2;
+      const rightUp = lm[R_WRI].y < lm[NOSE].y && lm[L_WRI].y > lm[L_SHO].y + sw * 0.2;
+      return leftUp || rightUp;
+    },
+  },
+  crossarms: {
+    name: "Cross Arms", emoji: "🙅", hint: "Cross both arms in front of your chest like an X!",
+    arms: { lE: [60,58], lW: [82,70], rE: [60,58], rW: [38,70] },
+    match(lm) {
+      const sw = shoulderWidth(lm);
+      const cx = (lm[L_SHO].x + lm[R_SHO].x) / 2;
+      const chestTop = Math.min(lm[L_SHO].y, lm[R_SHO].y) - sw * 0.2;
+      const chestBottom = (lm[L_HIP].y + lm[R_HIP].y) / 2;
+      const crossed = (lm[L_WRI].x - cx) * (lm[R_WRI].x - cx) < 0 && dist(lm[L_WRI], lm[R_WRI]) < sw * 0.9;
+      const lChest = lm[L_WRI].y > chestTop && lm[L_WRI].y < chestBottom;
+      const rChest = lm[R_WRI].y > chestTop && lm[R_WRI].y < chestBottom;
+      return crossed && lChest && rChest;
+    },
+  },
+  handsonhips: {
+    name: "Hands on Hips", emoji: "🧍", hint: "Plant both hands on your hips, elbows out!",
+    arms: { lE: [26,58], lW: [50,90], rE: [94,58], rW: [70,90] },
+    match(lm) {
+      const sw = shoulderWidth(lm);
+      return dist(lm[L_WRI], lm[L_HIP]) < sw * 0.55 && dist(lm[R_WRI], lm[R_HIP]) < sw * 0.55;
+    },
+  },
+  hugyourself: {
+    name: "Hug Yourself", emoji: "🤗", hint: "Wrap your arms around yourself in a big hug!",
+    arms: { lE: [72,54], lW: [82,44], rE: [48,54], rW: [38,44] },
+    match(lm) {
+      const sw = shoulderWidth(lm);
+      return dist(lm[L_WRI], lm[R_SHO]) < sw * 0.6 && dist(lm[R_WRI], lm[L_SHO]) < sw * 0.6;
+    },
+  },
+  handonhead: {
+    name: "Hand on Head", emoji: "🙋", hint: "Rest one hand on top of your head!",
+    arms: { lE: [40,70], lW: [34,92], rE: [88,28], rW: [60,18] },
+    match(lm) {
+      const sw = shoulderWidth(lm);
+      const lTouch = dist(lm[L_WRI], lm[NOSE]) < sw * 0.7 && lm[R_WRI].y > lm[R_SHO].y;
+      const rTouch = dist(lm[R_WRI], lm[NOSE]) < sw * 0.7 && lm[L_WRI].y > lm[L_SHO].y;
+      return lTouch || rTouch;
+    },
+  },
+};
+const POSE_KEYS = Object.keys(POSES);
+
+function buildStickSvg(key) {
+  const p = POSES[key];
+  const { lE, lW, rE, rW } = p.arms;
+  const lSho = [46, 46], rSho = [74, 46];
+  const lHip = [52, 92], rHip = [68, 92];
+  const line = (a, b, extra = "") => `<line x1="${a[0]}" y1="${a[1]}" x2="${b[0]}" y2="${b[1]}" ${extra} />`;
+  return `
+    <g stroke="url(#stickGrad)" stroke-width="6" stroke-linecap="round" fill="none">
+      <defs>
+        <linearGradient id="stickGrad" x1="0" y1="0" x2="1" y2="1">
+          <stop offset="0%" stop-color="#ff8fc7"/>
+          <stop offset="100%" stop-color="#ffd166"/>
+        </linearGradient>
+      </defs>
+      ${line(lSho, rSho)}
+      ${line(lSho, [60,44])}
+      ${line(rSho, [60,44])}
+      ${line([60,44], [60,92])}
+      ${line([60,92], lHip)}
+      ${line([60,92], rHip)}
+      ${line(lHip, [42,140])}
+      ${line(rHip, [78,140])}
+      ${line(lSho, lE)}
+      ${line(lE, lW)}
+      ${line(rSho, rE)}
+      ${line(rE, rW)}
+      <circle cx="${lW[0]}" cy="${lW[1]}" r="6" fill="#ff8fc7" stroke="none" />
+      <circle cx="${rW[0]}" cy="${rW[1]}" r="6" fill="#ffd166" stroke="none" />
+    </g>
+    <circle cx="60" cy="26" r="14" fill="none" stroke="url(#stickGrad)" stroke-width="6" />
+  `;
+}
+
+const GOOD_PHRASES = ["Awesome!", "Nailed the pose!", "You're a natural!", "Great moves!", "Boom, matched!", "Superstar!"];
+const TRY_PHRASES = ["Nice try!", "So close!", "Keep dancing!", "You've got this!", "Almost there!"];
+
+// ---------- game state ----------
+const TOTAL_ROUNDS = 8;
+const HOLD_MS = 3000;
+const ROUND_TIME_MS = 15000;
+let state = "loading"; // loading | idle | playing | feedback | ended
+let poseLandmarker = null;
+let currentPose = null;
+let roundIndex = 0;
+let score = 0, streak = 0, lives = 3;
+let awaitingAnswer = false;
+let roundStartTime = 0;
+let holdMatching = false, holdStart = 0;
+let audioCtx = null;
+
+function ensureAudio() {
+  if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+  return audioCtx;
+}
+function playTone(freq, delay = 0) {
+  try {
+    const ctxA = ensureAudio();
+    const t0 = ctxA.currentTime + delay;
+    const osc = ctxA.createOscillator();
+    const gain = ctxA.createGain();
+    osc.type = "sine";
+    osc.frequency.value = freq;
+    gain.gain.setValueAtTime(0.0001, t0);
+    gain.gain.exponentialRampToValueAtTime(0.12, t0 + 0.02);
+    gain.gain.exponentialRampToValueAtTime(0.0001, t0 + 0.28);
+    osc.connect(gain).connect(ctxA.destination);
+    osc.start(t0);
+    osc.stop(t0 + 0.3);
+  } catch (e) { /* audio not ready yet */ }
+}
+
+function updateHUD() {
+  scoreVal.textContent = score;
+  streakVal.textContent = streak;
+  qIndexVal.textContent = Math.min(roundIndex, TOTAL_ROUNDS);
+  qTotalVal.textContent = TOTAL_ROUNDS;
+  heartsRow.textContent = "❤️".repeat(Math.max(0, lives)) + "🤍".repeat(Math.max(0, 3 - lives));
+}
+
+function setHoldProgress(p) { holdRing.style.setProperty("--p", p); }
+
+function nextRound() {
+  const key = POSE_KEYS[Math.floor(Math.random() * POSE_KEYS.length)];
+  currentPose = POSES[key];
+  roundIndex++;
+  updateHUD();
+  poseEmoji.textContent = currentPose.emoji;
+  poseNameText.textContent = currentPose.name;
+  poseHint.textContent = currentPose.hint;
+  stickSvg.innerHTML = buildStickSvg(key);
+  roundStartTime = performance.now();
+  awaitingAnswer = true;
+  holdMatching = false;
+  setHoldProgress(0);
+  matchEmoji.textContent = "🤔";
+  feedbackBanner.className = "feedback-banner";
+  feedbackBanner.textContent = "";
+  timerFill.style.background = "linear-gradient(90deg, #ff8fc7, #ffd166)";
+}
+
+function showFeedback(correct, text) {
+  feedbackBanner.textContent = (correct ? "✅ " : "❌ ") + text;
+  feedbackBanner.className = "feedback-banner " + (correct ? "good" : "bad");
+}
+
+function resolveRound(matched) {
+  if (!awaitingAnswer || state !== "playing") return;
+  awaitingAnswer = false;
+  state = "feedback";
+  if (matched) {
+    score += 10 + streak * 2;
+    streak++;
+    showFeedback(true, pick(GOOD_PHRASES));
+    burstConfetti();
+    playTone(523);
+    playTone(784, 0.12);
+  } else {
+    lives--;
+    streak = 0;
+    showFeedback(false, `Time's up! That was ${currentPose.name}. ${pick(TRY_PHRASES)}`);
+    playTone(160);
+  }
+  updateHUD();
+  setTimeout(() => {
+    if (lives <= 0) return gameOver();
+    if (roundIndex >= TOTAL_ROUNDS) return victory();
+    state = "playing";
+    nextRound();
+  }, 1700);
+}
+function pick(arr) { return arr[Math.floor(Math.random() * arr.length)]; }
+
+function gameOver() {
+  state = "ended";
+  endTitle.textContent = "💫 Game Over";
+  endSubtitle.textContent = "Out of lives — but every dancer trips sometimes!";
+  endScore.textContent = `⭐ ${score} points`;
+  endOverlay.style.display = "flex";
+  skipBtn.style.display = "none";
+}
+function victory() {
+  state = "ended";
+  endTitle.textContent = "🏆 Dance-Off Complete!";
+  endSubtitle.textContent = "You struck every pose like a true champion!";
+  endScore.textContent = `⭐ ${score} points`;
+  endOverlay.style.display = "flex";
+  skipBtn.style.display = "none";
+  burstConfetti(90);
+}
+
+playAgainBtn.addEventListener("click", () => {
+  endOverlay.style.display = "none";
+  score = 0; streak = 0; lives = 3; roundIndex = 0;
+  updateHUD();
+  state = "playing";
+  nextRound();
+  requestAnimationFrame(loop);
+});
+skipBtn.addEventListener("click", () => resolveRound(true));
+
+// ---------- pose skeleton drawing ----------
+const POSE_CONNECTIONS = [[L_SHO,R_SHO],[L_SHO,L_ELB],[L_ELB,L_WRI],[R_SHO,R_ELB],[R_ELB,R_WRI],[L_SHO,L_HIP],[R_SHO,R_HIP],[L_HIP,R_HIP]];
+function drawSkeleton(lm, w, h) {
+  octx.lineWidth = 4;
+  octx.strokeStyle = "rgba(255,255,255,0.8)";
+  octx.shadowColor = "#ffffff";
+  octx.shadowBlur = 8;
+  octx.beginPath();
+  for (const [a, b] of POSE_CONNECTIONS) {
+    if ((lm[a].visibility ?? 1) < 0.3 || (lm[b].visibility ?? 1) < 0.3) continue;
+    octx.moveTo(lm[a].x * w, lm[a].y * h);
+    octx.lineTo(lm[b].x * w, lm[b].y * h);
+  }
+  octx.stroke();
+  octx.shadowBlur = 10;
+  for (const i of [NOSE, L_SHO, R_SHO, L_ELB, R_ELB, L_WRI, R_WRI, L_HIP, R_HIP]) {
+    if ((lm[i].visibility ?? 1) < 0.3) continue;
+    octx.beginPath();
+    octx.fillStyle = "#ffffff";
+    octx.arc(lm[i].x * w, lm[i].y * h, [L_WRI, R_WRI].includes(i) ? 7 : 4, 0, Math.PI * 2);
+    octx.fill();
+  }
+}
+
+// ---------- confetti ----------
+const confettiCanvas = document.getElementById("confettiCanvas");
+const cctx = confettiCanvas.getContext("2d");
+let confettiParticles = [];
+let confettiRAF = null;
+function resizeConfetti() { confettiCanvas.width = window.innerWidth; confettiCanvas.height = window.innerHeight; }
+window.addEventListener("resize", resizeConfetti);
+resizeConfetti();
+function burstConfetti(count = 45) {
+  const colors = ["#ff8fc7", "#ffd166", "#60a5fa", "#4ade80", "#c084fc"];
+  for (let i = 0; i < count; i++) {
+    confettiParticles.push({
+      x: confettiCanvas.width / 2 + (Math.random() - 0.5) * 200,
+      y: confettiCanvas.height * 0.35,
+      vx: (Math.random() - 0.5) * 8,
+      vy: -Math.random() * 8 - 4,
+      size: 5 + Math.random() * 5,
+      color: colors[Math.floor(Math.random() * colors.length)],
+      rot: Math.random() * Math.PI,
+      vrot: (Math.random() - 0.5) * 0.3,
+      life: 0,
+    });
+  }
+  if (!confettiRAF) confettiRAF = requestAnimationFrame(confettiLoop);
+}
+function confettiLoop() {
+  cctx.clearRect(0, 0, confettiCanvas.width, confettiCanvas.height);
+  confettiParticles.forEach((p) => {
+    p.vy += 0.25; p.x += p.vx; p.y += p.vy; p.rot += p.vrot; p.life++;
+    cctx.save();
+    cctx.translate(p.x, p.y);
+    cctx.rotate(p.rot);
+    cctx.fillStyle = p.color;
+    cctx.fillRect(-p.size / 2, -p.size / 2, p.size, p.size);
+    cctx.restore();
+  });
+  confettiParticles = confettiParticles.filter((p) => p.y < confettiCanvas.height + 30 && p.life < 240);
+  if (confettiParticles.length > 0) confettiRAF = requestAnimationFrame(confettiLoop);
+  else confettiRAF = null;
+}
+
+// ---------- main loop ----------
+function loop() {
+  if (state !== "playing" && state !== "feedback") return;
+  const now = performance.now();
+  const w = overlay.width, h = overlay.height;
+  const result = poseLandmarker.detectForVideo(video, now);
+  const landmarks = (result.landmarks && result.landmarks[0]) || null;
+
+  octx.clearRect(0, 0, w, h);
+  const visible = landmarks &&
+    [NOSE, L_SHO, R_SHO, L_WRI, R_WRI].every((i) => (landmarks[i].visibility ?? 1) > 0.4);
+
+  if (landmarks) drawSkeleton(landmarks, w, h);
+  liveText.textContent = visible ? "Live · tracking" : "Live";
+
+  if (state === "playing") {
+    const elapsed = now - roundStartTime;
+    const remain = Math.max(0, 1 - elapsed / ROUND_TIME_MS);
+    timerFill.style.width = remain * 100 + "%";
+    if (remain <= 0.25) timerFill.style.background = "linear-gradient(90deg, #f87171, #fca5a5)";
+    if (awaitingAnswer && remain <= 0) resolveRound(false);
+
+    if (awaitingAnswer && visible) {
+      const isMatch = currentPose.match(landmarks);
+      matchEmoji.textContent = isMatch ? "✅" : "🤔";
+      if (isMatch) {
+        if (!holdMatching) { holdMatching = true; holdStart = now; }
+        const p = Math.min(1, (now - holdStart) / HOLD_MS);
+        setHoldProgress(p);
+        holdCaption.textContent = "Hold it… hold it…";
+        if (p >= 1) resolveRound(true);
+      } else {
+        holdMatching = false;
+        setHoldProgress(0);
+        holdCaption.textContent = "Match the pose!";
+      }
+    } else {
+      holdMatching = false;
+      setHoldProgress(0);
+      matchEmoji.textContent = "🤔";
+      if (awaitingAnswer) holdCaption.textContent = "Step back into frame!";
+    }
+  }
+
+  requestAnimationFrame(loop);
+}
+
+async function loadModel() {
+  const fileset = await FilesetResolver.forVisionTasks(
+    "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.14/wasm"
+  );
+  poseLandmarker = await PoseLandmarker.createFromOptions(fileset, {
+    baseOptions: {
+      modelAssetPath:
+        "https://storage.googleapis.com/mediapipe-models/pose_landmarker/pose_landmarker_lite/float16/1/pose_landmarker_lite.task",
+      delegate: "GPU",
+    },
+    runningMode: "VIDEO",
+    numPoses: 1,
+  });
+  state = "idle";
+  statusEl.textContent = "Model ready — start the camera to dance!";
+  startBtn.disabled = false;
+  startBtn.textContent = "🕺 Start Dancing";
+}
+
+startBtn.addEventListener("click", async () => {
+  startBtn.disabled = true;
+  startBtn.textContent = "Starting camera…";
+  try {
+    const stream = await navigator.mediaDevices.getUserMedia({ video: { width: 640, height: 480 } });
+    video.srcObject = stream;
+    await new Promise((res) => (video.onloadedmetadata = res));
+    video.play();
+    overlay.width = video.videoWidth;
+    overlay.height = video.videoHeight;
+    liveDot.classList.add("live");
+    startOverlay.style.display = "none";
+    statusEl.textContent = "Copy the pose on the card and hold it steady!";
+    skipBtn.style.display = "inline-block";
+    score = 0; streak = 0; lives = 3; roundIndex = 0;
+    updateHUD();
+    state = "playing";
+    nextRound();
+    requestAnimationFrame(loop);
+  } catch (err) {
+    statusEl.textContent = "Camera unavailable — use the auto-pass link below each pose to preview the game.";
+    startOverlay.style.display = "none";
+    skipBtn.style.display = "inline-block";
+    score = 0; streak = 0; lives = 3; roundIndex = 0;
+    updateHUD();
+    state = "playing";
+    nextRound();
+  }
+});
+
+loadModel().catch((err) => {
+  statusEl.textContent = "Error loading model: " + err.message;
+  console.error(err);
+});
+</script>
+</body>
+</html>

@@ -1,0 +1,479 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Angle Master 📐</title>
+<style>
+  :root {
+    --accent: #fb923c; --accent-soft: #fb923c55;
+    --bg1: #2b1503; --bg2: #3d1e04; --bg3: #0f0700;
+    --good: #4ade80; --bad: #f87171;
+  }
+  * { box-sizing: border-box; }
+  html, body { height: 100%; }
+  body {
+    margin: 0; font-family: "Segoe UI", system-ui, sans-serif; color: #f2f0ff;
+    display: flex; flex-direction: column; align-items: center;
+    padding: 28px 16px 60px; min-height: 100vh; overflow-x: hidden;
+    background: var(--bg3); position: relative;
+  }
+  .aurora {
+    position: fixed; inset: 0; z-index: -1;
+    background:
+      radial-gradient(40% 35% at 20% 25%, var(--bg2) 0%, transparent 70%),
+      radial-gradient(45% 40% at 80% 20%, var(--accent-soft) 0%, transparent 70%),
+      radial-gradient(50% 45% at 50% 85%, var(--bg1) 0%, transparent 70%),
+      var(--bg3);
+    animation: drift 18s ease-in-out infinite alternate;
+  }
+  @keyframes drift { 0% { filter: hue-rotate(0deg); } 50% { filter: hue-rotate(15deg) brightness(1.08); } 100% { filter: hue-rotate(-10deg); } }
+  header { text-align: center; margin-bottom: 18px; position: relative; width: 100%; max-width: 800px; }
+  .home-link { position: absolute; left: 0; top: 4px; font-size: 0.85rem; font-weight: 700; color: #cfc9ea; text-decoration: none; background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.16); padding: 6px 14px; border-radius: 999px; transition: background 0.2s; }
+  .home-link:hover { background: rgba(255,255,255,0.16); }
+  h1 { font-size: clamp(1.6rem, 4vw, 2.4rem); margin: 0; font-weight: 800; letter-spacing: 0.5px; background: linear-gradient(90deg, #fb923c, #facc15, #f472b6); background-size: 200% auto; -webkit-background-clip: text; background-clip: text; color: transparent; animation: shine 6s linear infinite; }
+  @keyframes shine { to { background-position: 200% center; } }
+  #status { color: #b9b3d9; margin-top: 6px; font-size: 0.9rem; min-height: 1.2em; }
+  .glass { background: rgba(255, 255, 255, 0.06); border: 1px solid rgba(255, 255, 255, 0.14); -webkit-backdrop-filter: blur(18px); backdrop-filter: blur(18px); border-radius: 20px; box-shadow: 0 8px 32px rgba(0, 0, 0, 0.35); }
+  .hud { display: flex; gap: 18px; padding: 10px 22px; margin-bottom: 16px; font-weight: 700; font-size: 0.95rem; flex-wrap: wrap; justify-content: center; }
+  .hud-item { display: flex; align-items: center; gap: 6px; }
+  #heartsRow { letter-spacing: 2px; }
+  .arena { display: flex; gap: 16px; width: 900px; max-width: 100%; align-items: stretch; flex-wrap: wrap; justify-content: center; }
+  .pose-card { width: 260px; padding: 18px; text-align: center; display: flex; flex-direction: column; align-items: center; gap: 8px; }
+  .pose-topic { font-size: 0.75rem; text-transform: uppercase; letter-spacing: 1px; color: #b9b3d9; font-weight: 700; }
+  .pose-name { font-size: 1.15rem; font-weight: 800; }
+  .pose-hint { font-size: 0.85rem; color: #cfc9ea; }
+  .angle-svg { width: 160px; height: 130px; }
+  .current-readout { font-size: 0.9rem; font-weight: 700; color: #facc15; }
+  .timer-bar { width: 100%; margin-top: 4px; height: 8px; border-radius: 999px; background: rgba(255, 255, 255, 0.12); overflow: hidden; }
+  .timer-fill { height: 100%; width: 100%; background: linear-gradient(90deg, #fb923c, #facc15); transition: width 0.08s linear, background 0.3s; }
+  .stage { position: relative; width: 480px; max-width: 100%; aspect-ratio: 4 / 3; padding: 10px; }
+  .stage-inner { position: relative; width: 100%; height: 100%; border-radius: 14px; overflow: hidden; box-shadow: inset 0 0 0 2px rgba(255, 255, 255, 0.12); }
+  video, canvas.layer { position: absolute; top: 0; left: 0; width: 100%; height: 100%; object-fit: cover; transform: scaleX(-1); }
+  canvas.layer { pointer-events: none; }
+  .stage-badge { position: absolute; top: 18px; left: 18px; padding: 6px 14px; border-radius: 999px; font-size: 0.8rem; font-weight: 600; background: rgba(0, 0, 0, 0.45); border: 1px solid rgba(255, 255, 255, 0.2); display: flex; align-items: center; gap: 8px; z-index: 5; }
+  .dot { width: 9px; height: 9px; border-radius: 50%; background: #888; box-shadow: 0 0 8px 2px #8888; transition: background 0.2s, box-shadow 0.2s; }
+  .dot.live { background: #4ade80; box-shadow: 0 0 10px 3px #4ade8099; }
+  .match-badge-wrap { position: absolute; left: 50%; bottom: 14px; transform: translateX(-50%); z-index: 6; display: flex; flex-direction: column; align-items: center; gap: 6px; }
+  .hold-ring { width: 60px; height: 60px; border-radius: 50%; background: conic-gradient(var(--accent) calc(var(--p, 0) * 360deg), rgba(255,255,255,0.18) 0deg); display: flex; align-items: center; justify-content: center; transition: background 0.05s linear; }
+  .hold-ring-inner { width: 48px; height: 48px; border-radius: 50%; background: rgba(15, 7, 0, 0.88); display: flex; align-items: center; justify-content: center; font-size: 1.2rem; }
+  .hold-caption { font-size: 0.75rem; color: #cfc9ea; font-weight: 700; background: rgba(0,0,0,0.4); padding: 3px 10px; border-radius: 999px; }
+  .stage-overlay { position: absolute; inset: 10px; z-index: 10; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 14px; text-align: center; padding: 20px; background: rgba(15, 7, 0, 0.82); border-radius: 14px; }
+  .stage-overlay h2 { margin: 0; font-size: 1.4rem; }
+  .stage-overlay p { margin: 0; color: #cfc9ea; max-width: 420px; font-size: 0.9rem; }
+  .big-btn { padding: 14px 30px; border-radius: 999px; border: none; cursor: pointer; font-size: 1.05rem; font-weight: 800; color: #2b1503; background: linear-gradient(90deg, #fb923c, #facc15); box-shadow: 0 6px 22px rgba(251, 146, 60, 0.45); transition: transform 0.15s ease; }
+  .big-btn:hover { transform: scale(1.05); }
+  .big-btn:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
+  .feedback-banner { margin-top: 14px; min-height: 1.6em; font-size: 1.1rem; font-weight: 800; text-align: center; }
+  .feedback-banner.good { color: var(--good); }
+  .feedback-banner.bad { color: var(--bad); }
+  .skip-link { margin-top: 8px; font-size: 0.78rem; color: #8d87ab; background: none; border: none; text-decoration: underline; cursor: pointer; }
+  #confettiCanvas { position: fixed; inset: 0; z-index: 999; pointer-events: none; }
+  footer { margin-top: 26px; font-size: 0.78rem; color: #8d87ab; text-align: center; max-width: 620px; line-height: 1.6; }
+  @media (max-width: 640px) { .stage { width: 100%; } }
+</style>
+</head>
+<body>
+  <div class="aurora"></div>
+  <canvas id="confettiCanvas"></canvas>
+
+  <header>
+    <a class="home-link" href="index.html">← Home</a>
+    <h1>📐 Angle Master</h1>
+    <div id="status">Loading model…</div>
+  </header>
+
+  <div class="hud glass">
+    <div class="hud-item">⭐ <span id="scoreVal">0</span></div>
+    <div class="hud-item">🔥 <span id="streakVal">0</span></div>
+    <div class="hud-item" id="heartsRow">❤️❤️❤️</div>
+    <div class="hud-item">📋 <span id="qIndexVal">0</span>/<span id="qTotalVal">8</span></div>
+  </div>
+
+  <div class="arena">
+    <div class="pose-card glass">
+      <div class="pose-topic">Make this angle!</div>
+      <svg class="angle-svg" id="angleSvg" viewBox="0 0 160 130"></svg>
+      <div class="pose-name" id="poseNameText">Get Ready</div>
+      <div class="pose-hint" id="poseHint">Press Start to begin!</div>
+      <div class="current-readout" id="currentReadout">Current: –°</div>
+      <div class="timer-bar"><div class="timer-fill" id="timerFill"></div></div>
+    </div>
+
+    <div class="stage glass">
+      <div class="stage-badge"><span class="dot" id="liveDot"></span><span id="liveText">Idle</span></div>
+      <div class="stage-inner">
+        <video id="video" autoplay playsinline muted></video>
+        <canvas id="overlay" class="layer"></canvas>
+      </div>
+      <div class="match-badge-wrap">
+        <div class="hold-ring" id="holdRing"><div class="hold-ring-inner"><span id="matchEmoji">🤔</span></div></div>
+        <div class="hold-caption" id="holdCaption">Step into frame!</div>
+      </div>
+      <div class="stage-overlay" id="startOverlay">
+        <h2>📐 Ready to measure up?</h2>
+        <p>Bend your elbow to match the target angle shown on the card. Stand back so your shoulder, elbow and wrist are all visible.</p>
+        <button class="big-btn" id="startBtn" disabled>Loading model…</button>
+      </div>
+      <div class="stage-overlay" id="endOverlay" style="display:none;">
+        <h2 id="endTitle">🎉 Nicely measured!</h2>
+        <p id="endSubtitle">You finished the challenge.</p>
+        <div style="font-size:2.2rem; font-weight:800;" id="endScore">0</div>
+        <button class="big-btn" id="playAgainBtn">Play Again</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="feedback-banner" id="feedbackBanner"></div>
+  <button class="skip-link" id="skipBtn" style="display:none;">No camera? Tap here to auto-pass this angle</button>
+
+  <footer>
+    Stand back so your <strong>shoulder, elbow and wrist</strong> are all in view.
+    Bend either arm to match the angle and hold it steady until the ring fills up.
+  </footer>
+
+<script type="module">
+import { PoseLandmarker, FilesetResolver } from "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.14";
+
+const video = document.getElementById("video");
+const overlay = document.getElementById("overlay");
+const octx = overlay.getContext("2d");
+const statusEl = document.getElementById("status");
+const liveDot = document.getElementById("liveDot");
+const liveText = document.getElementById("liveText");
+const scoreVal = document.getElementById("scoreVal");
+const streakVal = document.getElementById("streakVal");
+const heartsRow = document.getElementById("heartsRow");
+const qIndexVal = document.getElementById("qIndexVal");
+const qTotalVal = document.getElementById("qTotalVal");
+const poseNameText = document.getElementById("poseNameText");
+const poseHint = document.getElementById("poseHint");
+const angleSvg = document.getElementById("angleSvg");
+const currentReadout = document.getElementById("currentReadout");
+const timerFill = document.getElementById("timerFill");
+const holdRing = document.getElementById("holdRing");
+const matchEmoji = document.getElementById("matchEmoji");
+const holdCaption = document.getElementById("holdCaption");
+const startOverlay = document.getElementById("startOverlay");
+const startBtn = document.getElementById("startBtn");
+const endOverlay = document.getElementById("endOverlay");
+const endTitle = document.getElementById("endTitle");
+const endSubtitle = document.getElementById("endSubtitle");
+const endScore = document.getElementById("endScore");
+const playAgainBtn = document.getElementById("playAgainBtn");
+const feedbackBanner = document.getElementById("feedbackBanner");
+const skipBtn = document.getElementById("skipBtn");
+
+const NOSE = 0, L_SHO = 11, R_SHO = 12, L_ELB = 13, R_ELB = 14, L_WRI = 15, R_WRI = 16;
+
+function angleAt(a, b, c) {
+  const v1 = { x: a.x - b.x, y: a.y - b.y };
+  const v2 = { x: c.x - b.x, y: c.y - b.y };
+  const dot = v1.x * v2.x + v1.y * v2.y;
+  const mag1 = Math.hypot(v1.x, v1.y), mag2 = Math.hypot(v2.x, v2.y);
+  const cosv = Math.min(1, Math.max(-1, dot / (mag1 * mag2)));
+  return (Math.acos(cosv) * 180) / Math.PI;
+}
+
+const TOLERANCE = 18;
+const ANGLE_TARGETS = [
+  { label: "Right Angle", tag: "90°", deg: 90, hint: "Bend your elbow into a perfect L-shape!" },
+  { label: "Straight Angle", tag: "180°", deg: 180, hint: "Stretch your arm out fully straight!" },
+  { label: "Acute Angle", tag: "~45°", deg: 45, hint: "Make a sharp, tight bend at your elbow!" },
+  { label: "Obtuse Angle", tag: "~130°", deg: 130, hint: "Make a wide, open bend at your elbow!" },
+  { label: "Wide Angle", tag: "~160°", deg: 160, hint: "Almost straight — just a slight bend!" },
+  { label: "Sharp Angle", tag: "~60°", deg: 60, hint: "Bend your elbow in tight and close!" },
+];
+
+function buildAngleSvg(targetDeg) {
+  const vertex = { x: 110, y: 90 };
+  const len = 60;
+  const theta1 = 180; // upper arm points left
+  const theta2 = 180 - targetDeg;
+  const p1 = { x: vertex.x + len * Math.cos((theta1 * Math.PI) / 180), y: vertex.y - len * Math.sin((theta1 * Math.PI) / 180) };
+  const p2 = { x: vertex.x + len * Math.cos((theta2 * Math.PI) / 180), y: vertex.y - len * Math.sin((theta2 * Math.PI) / 180) };
+  return `
+    <line x1="${vertex.x}" y1="${vertex.y}" x2="${p1.x}" y2="${p1.y}" stroke="#facc15" stroke-width="7" stroke-linecap="round" />
+    <line x1="${vertex.x}" y1="${vertex.y}" x2="${p2.x}" y2="${p2.y}" stroke="#fb923c" stroke-width="7" stroke-linecap="round" />
+    <circle cx="${vertex.x}" cy="${vertex.y}" r="6" fill="#fff" />
+    <text x="${vertex.x - 34}" y="${vertex.y + 22}" fill="#f2f0ff" font-size="15" font-weight="800" text-anchor="middle">${targetDeg}°</text>
+  `;
+}
+
+const GOOD_PHRASES = ["Perfectly measured!", "Spot on!", "Geometry genius!", "Nailed the angle!", "Great job!"];
+const TRY_PHRASES = ["So close!", "Keep adjusting!", "Nice try!", "Almost there!"];
+
+const TOTAL_ROUNDS = 8;
+const HOLD_MS = 3000;
+const ROUND_TIME_MS = 15000;
+let state = "loading";
+let poseLandmarker = null;
+let currentTarget = null;
+let roundIndex = 0;
+let score = 0, streak = 0, lives = 3;
+let awaitingAnswer = false;
+let roundStartTime = 0;
+let holdMatching = false, holdStart = 0;
+let audioCtx = null;
+
+function ensureAudio() { if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)(); return audioCtx; }
+function playTone(freq, delay = 0) {
+  try {
+    const ctxA = ensureAudio();
+    const t0 = ctxA.currentTime + delay;
+    const osc = ctxA.createOscillator();
+    const gain = ctxA.createGain();
+    osc.type = "sine";
+    osc.frequency.value = freq;
+    gain.gain.setValueAtTime(0.0001, t0);
+    gain.gain.exponentialRampToValueAtTime(0.12, t0 + 0.02);
+    gain.gain.exponentialRampToValueAtTime(0.0001, t0 + 0.28);
+    osc.connect(gain).connect(ctxA.destination);
+    osc.start(t0);
+    osc.stop(t0 + 0.3);
+  } catch (e) { /* audio not ready yet */ }
+}
+function pick(arr) { return arr[Math.floor(Math.random() * arr.length)]; }
+
+function updateHUD() {
+  scoreVal.textContent = score;
+  streakVal.textContent = streak;
+  qIndexVal.textContent = Math.min(roundIndex, TOTAL_ROUNDS);
+  qTotalVal.textContent = TOTAL_ROUNDS;
+  heartsRow.textContent = "❤️".repeat(Math.max(0, lives)) + "🤍".repeat(Math.max(0, 3 - lives));
+}
+function setHoldProgress(p) { holdRing.style.setProperty("--p", p); }
+
+function nextRound() {
+  currentTarget = pick(ANGLE_TARGETS);
+  roundIndex++;
+  updateHUD();
+  poseNameText.textContent = `${currentTarget.label} (${currentTarget.tag})`;
+  poseHint.textContent = currentTarget.hint;
+  angleSvg.innerHTML = buildAngleSvg(currentTarget.deg);
+  currentReadout.textContent = "Current: –°";
+  roundStartTime = performance.now();
+  awaitingAnswer = true;
+  holdMatching = false;
+  setHoldProgress(0);
+  matchEmoji.textContent = "🤔";
+  feedbackBanner.className = "feedback-banner";
+  feedbackBanner.textContent = "";
+  timerFill.style.background = "linear-gradient(90deg, #fb923c, #facc15)";
+}
+
+function showFeedback(correct, text) {
+  feedbackBanner.textContent = (correct ? "✅ " : "❌ ") + text;
+  feedbackBanner.className = "feedback-banner " + (correct ? "good" : "bad");
+}
+
+function resolveRound(matched) {
+  if (!awaitingAnswer || state !== "playing") return;
+  awaitingAnswer = false;
+  state = "feedback";
+  if (matched) {
+    score += 10 + streak * 2;
+    streak++;
+    showFeedback(true, pick(GOOD_PHRASES));
+    burstConfetti();
+    playTone(523);
+    playTone(784, 0.12);
+  } else {
+    lives--;
+    streak = 0;
+    showFeedback(false, `Time's up! That was a ${currentTarget.label.toLowerCase()} (${currentTarget.tag}). ${pick(TRY_PHRASES)}`);
+    playTone(160);
+  }
+  updateHUD();
+  setTimeout(() => {
+    if (lives <= 0) return gameOver();
+    if (roundIndex >= TOTAL_ROUNDS) return victory();
+    state = "playing";
+    nextRound();
+  }, 1700);
+}
+
+function gameOver() {
+  state = "ended";
+  endTitle.textContent = "💫 Game Over";
+  endSubtitle.textContent = "Out of lives — geometry takes practice!";
+  endScore.textContent = `⭐ ${score} points`;
+  endOverlay.style.display = "flex";
+  skipBtn.style.display = "none";
+}
+function victory() {
+  state = "ended";
+  endTitle.textContent = "🏆 Angle Master!";
+  endSubtitle.textContent = "You measured up to every angle!";
+  endScore.textContent = `⭐ ${score} points`;
+  endOverlay.style.display = "flex";
+  skipBtn.style.display = "none";
+  burstConfetti(90);
+}
+playAgainBtn.addEventListener("click", () => {
+  endOverlay.style.display = "none";
+  score = 0; streak = 0; lives = 3; roundIndex = 0;
+  updateHUD();
+  state = "playing";
+  nextRound();
+  requestAnimationFrame(loop);
+});
+skipBtn.addEventListener("click", () => resolveRound(true));
+
+const POSE_CONNECTIONS = [[L_SHO,R_SHO],[L_SHO,L_ELB],[L_ELB,L_WRI],[R_SHO,R_ELB],[R_ELB,R_WRI]];
+function drawSkeleton(lm, w, h) {
+  octx.lineWidth = 4;
+  octx.strokeStyle = "rgba(255,255,255,0.8)";
+  octx.shadowColor = "#ffffff";
+  octx.shadowBlur = 8;
+  octx.beginPath();
+  for (const [a, b] of POSE_CONNECTIONS) {
+    if ((lm[a].visibility ?? 1) < 0.3 || (lm[b].visibility ?? 1) < 0.3) continue;
+    octx.moveTo(lm[a].x * w, lm[a].y * h);
+    octx.lineTo(lm[b].x * w, lm[b].y * h);
+  }
+  octx.stroke();
+  octx.shadowBlur = 10;
+  for (const i of [NOSE, L_SHO, R_SHO, L_ELB, R_ELB, L_WRI, R_WRI]) {
+    if ((lm[i].visibility ?? 1) < 0.3) continue;
+    octx.beginPath();
+    octx.fillStyle = "#ffffff";
+    octx.arc(lm[i].x * w, lm[i].y * h, [L_WRI, R_WRI].includes(i) ? 7 : 4, 0, Math.PI * 2);
+    octx.fill();
+  }
+}
+
+const confettiCanvas = document.getElementById("confettiCanvas");
+const cctx = confettiCanvas.getContext("2d");
+let confettiParticles = [];
+let confettiRAF = null;
+function resizeConfetti() { confettiCanvas.width = window.innerWidth; confettiCanvas.height = window.innerHeight; }
+window.addEventListener("resize", resizeConfetti);
+resizeConfetti();
+function burstConfetti(count = 45) {
+  const colors = ["#fb923c", "#facc15", "#60a5fa", "#4ade80", "#f472b6"];
+  for (let i = 0; i < count; i++) {
+    confettiParticles.push({
+      x: confettiCanvas.width / 2 + (Math.random() - 0.5) * 200,
+      y: confettiCanvas.height * 0.35,
+      vx: (Math.random() - 0.5) * 8, vy: -Math.random() * 8 - 4,
+      size: 5 + Math.random() * 5, color: colors[Math.floor(Math.random() * colors.length)],
+      rot: Math.random() * Math.PI, vrot: (Math.random() - 0.5) * 0.3, life: 0,
+    });
+  }
+  if (!confettiRAF) confettiRAF = requestAnimationFrame(confettiLoop);
+}
+function confettiLoop() {
+  cctx.clearRect(0, 0, confettiCanvas.width, confettiCanvas.height);
+  confettiParticles.forEach((p) => {
+    p.vy += 0.25; p.x += p.vx; p.y += p.vy; p.rot += p.vrot; p.life++;
+    cctx.save(); cctx.translate(p.x, p.y); cctx.rotate(p.rot);
+    cctx.fillStyle = p.color; cctx.fillRect(-p.size / 2, -p.size / 2, p.size, p.size); cctx.restore();
+  });
+  confettiParticles = confettiParticles.filter((p) => p.y < confettiCanvas.height + 30 && p.life < 240);
+  confettiRAF = confettiParticles.length > 0 ? requestAnimationFrame(confettiLoop) : null;
+}
+
+function loop() {
+  if (state !== "playing" && state !== "feedback") return;
+  const now = performance.now();
+  const w = overlay.width, h = overlay.height;
+  const result = poseLandmarker.detectForVideo(video, now);
+  const landmarks = (result.landmarks && result.landmarks[0]) || null;
+
+  octx.clearRect(0, 0, w, h);
+  const visible = landmarks && [L_SHO, R_SHO, L_ELB, R_ELB, L_WRI, R_WRI].every((i) => (landmarks[i].visibility ?? 1) > 0.4);
+  if (landmarks) drawSkeleton(landmarks, w, h);
+  liveText.textContent = visible ? "Live · tracking" : "Live";
+
+  if (state === "playing") {
+    const elapsed = now - roundStartTime;
+    const remain = Math.max(0, 1 - elapsed / ROUND_TIME_MS);
+    timerFill.style.width = remain * 100 + "%";
+    if (remain <= 0.25) timerFill.style.background = "linear-gradient(90deg, #f87171, #fca5a5)";
+    if (awaitingAnswer && remain <= 0) resolveRound(false);
+
+    if (awaitingAnswer && visible) {
+      const leftDeg = angleAt(landmarks[L_SHO], landmarks[L_ELB], landmarks[L_WRI]);
+      const rightDeg = angleAt(landmarks[R_SHO], landmarks[R_ELB], landmarks[R_WRI]);
+      const leftDiff = Math.abs(leftDeg - currentTarget.deg);
+      const rightDiff = Math.abs(rightDeg - currentTarget.deg);
+      const best = leftDiff <= rightDiff ? leftDeg : rightDeg;
+      currentReadout.textContent = `Current: ${Math.round(best)}°`;
+      const isMatch = leftDiff <= TOLERANCE || rightDiff <= TOLERANCE;
+      matchEmoji.textContent = isMatch ? "✅" : "🤔";
+      if (isMatch) {
+        if (!holdMatching) { holdMatching = true; holdStart = now; }
+        const p = Math.min(1, (now - holdStart) / HOLD_MS);
+        setHoldProgress(p);
+        holdCaption.textContent = "Hold it… hold it…";
+        if (p >= 1) resolveRound(true);
+      } else {
+        holdMatching = false;
+        setHoldProgress(0);
+        holdCaption.textContent = "Adjust your arm!";
+      }
+    } else {
+      holdMatching = false;
+      setHoldProgress(0);
+      matchEmoji.textContent = "🤔";
+      if (awaitingAnswer) holdCaption.textContent = "Step back into frame!";
+    }
+  }
+
+  requestAnimationFrame(loop);
+}
+
+async function loadModel() {
+  const fileset = await FilesetResolver.forVisionTasks("https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.14/wasm");
+  poseLandmarker = await PoseLandmarker.createFromOptions(fileset, {
+    baseOptions: {
+      modelAssetPath: "https://storage.googleapis.com/mediapipe-models/pose_landmarker/pose_landmarker_lite/float16/1/pose_landmarker_lite.task",
+      delegate: "GPU",
+    },
+    runningMode: "VIDEO",
+    numPoses: 1,
+  });
+  state = "idle";
+  statusEl.textContent = "Model ready — start the camera to play!";
+  startBtn.disabled = false;
+  startBtn.textContent = "📐 Start Measuring";
+}
+
+startBtn.addEventListener("click", async () => {
+  startBtn.disabled = true;
+  startBtn.textContent = "Starting camera…";
+  try {
+    const stream = await navigator.mediaDevices.getUserMedia({ video: { width: 640, height: 480 } });
+    video.srcObject = stream;
+    await new Promise((res) => (video.onloadedmetadata = res));
+    video.play();
+    overlay.width = video.videoWidth;
+    overlay.height = video.videoHeight;
+    liveDot.classList.add("live");
+    startOverlay.style.display = "none";
+    statusEl.textContent = "Bend your arm to match the target angle!";
+    skipBtn.style.display = "inline-block";
+    score = 0; streak = 0; lives = 3; roundIndex = 0;
+    updateHUD();
+    state = "playing";
+    nextRound();
+    requestAnimationFrame(loop);
+  } catch (err) {
+    statusEl.textContent = "Camera unavailable — use the auto-pass link below to preview the game.";
+    startOverlay.style.display = "none";
+    skipBtn.style.display = "inline-block";
+    score = 0; streak = 0; lives = 3; roundIndex = 0;
+    updateHUD();
+    state = "playing";
+    nextRound();
+  }
+});
+
+loadModel().catch((err) => {
+  statusEl.textContent = "Error loading model: " + err.message;
+  console.error(err);
+});
+</script>
+</body>
+</html>
