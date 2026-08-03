@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>Gesture Vision ✨</title>
+<title>Finger Math Challenge 🧮</title>
 <style>
   :root {
     --accent: #7c4dff;
@@ -11,6 +11,8 @@
     --bg1: #0b0620;
     --bg2: #1a0b3d;
     --bg3: #05030f;
+    --good: #4ade80;
+    --bad: #f87171;
   }
 
   * { box-sizing: border-box; }
@@ -48,7 +50,7 @@
     100% { filter: hue-rotate(-10deg) brightness(1); }
   }
 
-  header { text-align: center; margin-bottom: 22px; }
+  header { text-align: center; margin-bottom: 18px; }
   h1 {
     font-size: clamp(1.6rem, 4vw, 2.4rem);
     margin: 0;
@@ -71,6 +73,54 @@
     backdrop-filter: blur(18px);
     border-radius: 20px;
     box-shadow: 0 8px 32px rgba(0, 0, 0, 0.35);
+  }
+
+  .hud {
+    display: flex;
+    gap: 18px;
+    padding: 10px 22px;
+    margin-bottom: 16px;
+    font-weight: 700;
+    font-size: 0.95rem;
+    flex-wrap: wrap;
+    justify-content: center;
+  }
+  .hud-item { display: flex; align-items: center; gap: 6px; }
+  #heartsRow { letter-spacing: 2px; }
+
+  .question-card {
+    width: 760px;
+    max-width: 100%;
+    padding: 18px 24px;
+    text-align: center;
+    margin-bottom: 16px;
+  }
+  .q-topic {
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    color: #b9b3d9;
+    font-weight: 700;
+    margin-bottom: 4px;
+  }
+  .q-emoji { font-size: 2.2rem; margin-bottom: 4px; }
+  .q-prompt {
+    font-size: clamp(1.3rem, 3.2vw, 1.9rem);
+    font-weight: 800;
+    color: #fff;
+  }
+  .timer-bar {
+    margin-top: 12px;
+    height: 8px;
+    border-radius: 999px;
+    background: rgba(255, 255, 255, 0.12);
+    overflow: hidden;
+  }
+  .timer-fill {
+    height: 100%;
+    width: 100%;
+    background: linear-gradient(90deg, #a78bfa, #f472b6);
+    transition: width 0.08s linear, background 0.3s;
   }
 
   .stage {
@@ -97,7 +147,6 @@
     object-fit: cover;
     transform: scaleX(-1);
   }
-  video { opacity: 0; }
   canvas.layer { pointer-events: none; }
 
   .stage-badge {
@@ -122,45 +171,9 @@
   }
   .dot.live { background: #4ade80; box-shadow: 0 0 10px 3px #4ade8099; }
 
-  .hand-badges {
-    position: absolute;
-    top: 18px;
-    right: 18px;
-    display: flex;
-    flex-direction: column;
-    gap: 8px;
-    z-index: 5;
-    align-items: flex-end;
-  }
-  .hand-pill {
-    padding: 7px 14px;
-    border-radius: 999px;
-    background: rgba(0, 0, 0, 0.5);
-    border: 1px solid rgba(255, 255, 255, 0.25);
-    display: flex;
-    align-items: center;
-    gap: 7px;
-    font-weight: 700;
-    font-size: 0.9rem;
-    transition: border-color 0.3s ease, box-shadow 0.3s ease, opacity 0.3s ease;
-    opacity: 0.5;
-  }
-  .hand-pill.active {
-    opacity: 1;
-    border-color: var(--pill-color, #fff);
-    box-shadow: 0 0 16px var(--pill-color-soft, transparent);
-  }
-  .hand-pill .tag {
-    font-size: 0.65rem;
-    font-weight: 800;
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
-    color: #b9b3d9;
-  }
-
   .controls {
     position: absolute;
-    bottom: 14px;
+    top: 14px;
     right: 14px;
     display: flex;
     gap: 8px;
@@ -177,10 +190,84 @@
   .iconbtn:hover { transform: scale(1.08); background: rgba(0,0,0,0.65); }
   .iconbtn.off { opacity: 0.45; }
 
-  .chip-section {
+  .finger-badge-wrap {
+    position: absolute;
+    left: 50%;
+    bottom: 16px;
+    transform: translateX(-50%);
+    z-index: 6;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 6px;
+  }
+  .hold-ring {
+    width: 84px; height: 84px; border-radius: 50%;
+    background: conic-gradient(var(--accent) calc(var(--p, 0) * 360deg), rgba(255,255,255,0.18) 0deg);
+    display: flex; align-items: center; justify-content: center;
+    transition: background 0.05s linear;
+  }
+  .hold-ring-inner {
+    width: 70px; height: 70px; border-radius: 50%;
+    background: rgba(10, 6, 30, 0.88);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 1.9rem; font-weight: 800;
+  }
+  .hold-caption {
+    font-size: 0.75rem;
+    color: #cfc9ea;
+    font-weight: 700;
+    background: rgba(0,0,0,0.4);
+    padding: 3px 10px;
+    border-radius: 999px;
+  }
+
+  .stage-overlay {
+    position: absolute;
+    inset: 10px;
+    z-index: 10;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 14px;
+    text-align: center;
+    padding: 20px;
+    background: rgba(5, 3, 15, 0.78);
+    border-radius: 14px;
+  }
+  .stage-overlay h2 { margin: 0; font-size: 1.6rem; }
+  .stage-overlay p { margin: 0; color: #cfc9ea; max-width: 480px; }
+  .big-btn {
+    padding: 14px 30px;
+    border-radius: 999px;
+    border: none;
+    cursor: pointer;
+    font-size: 1.05rem;
+    font-weight: 800;
+    color: #fff;
+    background: linear-gradient(90deg, #a78bfa, #f472b6);
+    box-shadow: 0 6px 22px rgba(124, 77, 255, 0.45);
+    transition: transform 0.15s ease;
+  }
+  .big-btn:hover { transform: scale(1.05); }
+  .big-btn:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
+
+  .feedback-banner {
+    margin-top: 14px;
+    min-height: 1.6em;
+    font-size: 1.1rem;
+    font-weight: 800;
+    text-align: center;
+    transition: color 0.2s;
+  }
+  .feedback-banner.good { color: var(--good); }
+  .feedback-banner.bad { color: var(--bad); }
+
+  .pad-section {
     width: 100%;
     max-width: 900px;
-    margin-top: 22px;
+    margin-top: 20px;
   }
   .chip-heading {
     font-size: 0.78rem;
@@ -196,24 +283,26 @@
     gap: 8px;
     justify-content: center;
   }
-  .chips + .chip-heading { margin-top: 18px; }
   .chip {
-    font-size: 0.8rem;
-    padding: 7px 13px;
+    font-size: 0.85rem;
+    padding: 8px 14px;
     border-radius: 999px;
     background: rgba(255, 255, 255, 0.07);
     border: 1px solid rgba(255, 255, 255, 0.14);
     color: #cfc9ea;
     cursor: pointer;
     transition: all 0.2s ease;
+    font-weight: 700;
+    min-width: 40px;
+    text-align: center;
   }
   .chip:hover { background: rgba(255, 255, 255, 0.14); }
-  .chip.active {
-    background: var(--accent);
-    color: #fff;
-    border-color: var(--accent);
-    box-shadow: 0 0 14px var(--accent-soft);
-    transform: translateY(-2px) scale(1.06);
+
+  #confettiCanvas {
+    position: fixed;
+    inset: 0;
+    z-index: 999;
+    pointer-events: none;
   }
 
   footer {
@@ -226,215 +315,302 @@
   }
 
   @media (max-width: 640px) {
-    .stage { width: 100%; }
+    .stage, .question-card { width: 100%; }
   }
 </style>
 </head>
 <body>
   <div class="aurora" id="aurora"></div>
+  <canvas id="confettiCanvas"></canvas>
 
   <header>
-    <h1>✨ Gesture Vision</h1>
+    <h1>🧮 Finger Math Challenge</h1>
     <div id="status">Loading model…</div>
   </header>
 
+  <div class="hud glass">
+    <div class="hud-item">⭐ <span id="scoreVal">0</span></div>
+    <div class="hud-item">🔥 <span id="streakVal">0</span></div>
+    <div class="hud-item" id="heartsRow">❤️❤️❤️</div>
+    <div class="hud-item">📋 <span id="qIndexVal">0</span>/<span id="qTotalVal">10</span></div>
+  </div>
+
+  <div class="question-card glass">
+    <div class="q-topic" id="qTopic">Grade 6 Math</div>
+    <div class="q-emoji" id="qEmoji">🚀</div>
+    <div class="q-prompt" id="qPrompt">Press Start to begin your math adventure!</div>
+    <div class="timer-bar"><div class="timer-fill" id="timerFill"></div></div>
+  </div>
+
   <div class="stage glass">
-    <div class="stage-badge"><span class="dot" id="liveDot"></span><span id="liveText">Starting…</span></div>
-    <div class="hand-badges">
-      <div class="hand-pill" id="leftPill"><span class="tag">L · Video</span><span id="leftEmoji">🖐️</span><span id="leftLabel">Normal</span></div>
-      <div class="hand-pill" id="rightPill"><span class="tag">R · Face</span><span id="rightEmoji">🙂</span><span id="rightLabel">None</span></div>
-    </div>
-    <div class="stage-inner">
-      <video id="video" autoplay playsinline muted></video>
-      <canvas id="fx" class="layer"></canvas>
-      <canvas id="overlay" class="layer"></canvas>
-    </div>
+    <div class="stage-badge"><span class="dot" id="liveDot"></span><span id="liveText">Idle</span></div>
     <div class="controls">
       <button class="iconbtn" id="toggleSkeleton" title="Toggle hand skeleton">🦴</button>
       <button class="iconbtn" id="toggleSound" title="Toggle sound">🔊</button>
     </div>
+    <div class="stage-inner">
+      <video id="video" autoplay playsinline muted></video>
+      <canvas id="overlay" class="layer"></canvas>
+    </div>
+    <div class="finger-badge-wrap">
+      <div class="hold-ring" id="holdRing"><div class="hold-ring-inner"><span id="fingerCount">–</span></div></div>
+      <div class="hold-caption" id="holdCaption">Show me your answer!</div>
+    </div>
+    <div class="stage-overlay" id="startOverlay">
+      <h2>👋 Ready to play?</h2>
+      <p>Answer each question by holding up fingers to the camera. Hold steady and I'll count them! You can also tap a number below if you don't have a camera.</p>
+      <button class="big-btn" id="startBtn" disabled>Loading model…</button>
+    </div>
+    <div class="stage-overlay" id="endOverlay" style="display:none;">
+      <h2 id="endTitle">🎉 Great job!</h2>
+      <p id="endSubtitle">You finished the challenge.</p>
+      <div style="font-size:2.2rem; font-weight:800;" id="endScore">0</div>
+      <button class="big-btn" id="playAgainBtn">Play Again</button>
+    </div>
   </div>
 
-  <div class="chip-section">
-    <div class="chip-heading">🫲 Left Hand — Video Filter</div>
-    <div class="chips" id="leftChips"></div>
-    <div class="chip-heading">🫱 Right Hand — Face Filter</div>
-    <div class="chips" id="rightChips"></div>
+  <div class="feedback-banner" id="feedbackBanner"></div>
+
+  <div class="pad-section">
+    <div class="chip-heading">🙌 Or tap your answer (0–10)</div>
+    <div class="chips" id="answerPad"></div>
   </div>
 
   <footer>
-    Your <strong>left hand</strong> picks a full-screen video filter — Thermal, Invisibility, Mirror, TV Static.
-    Your <strong>right hand</strong> picks a face filter — Bald, Big Head, Joker, or Face Swap — applied to your
-    actual tracked face. Face Swap needs <strong>two faces</strong> in frame. No camera? Click any chip to preview it.
+    Hold up fingers to the camera to answer — use <strong>both hands</strong> for numbers above 5.
+    Keep your hand steady until the ring fills up. No camera? Tap a number chip instead.
   </footer>
 
 <script type="module">
-import { HandLandmarker, FaceLandmarker, FilesetResolver } from "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.14";
+import { HandLandmarker, FilesetResolver } from "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.14";
 
 const video = document.getElementById("video");
-const fx = document.getElementById("fx");
-const fxctx = fx.getContext("2d");
 const overlay = document.getElementById("overlay");
 const octx = overlay.getContext("2d");
 const statusEl = document.getElementById("status");
 const liveDot = document.getElementById("liveDot");
 const liveText = document.getElementById("liveText");
-const leftPill = document.getElementById("leftPill");
-const leftEmoji = document.getElementById("leftEmoji");
-const leftLabel = document.getElementById("leftLabel");
-const rightPill = document.getElementById("rightPill");
-const rightEmoji = document.getElementById("rightEmoji");
-const rightLabel = document.getElementById("rightLabel");
-const leftChipsEl = document.getElementById("leftChips");
-const rightChipsEl = document.getElementById("rightChips");
+const scoreVal = document.getElementById("scoreVal");
+const streakVal = document.getElementById("streakVal");
+const heartsRow = document.getElementById("heartsRow");
+const qIndexVal = document.getElementById("qIndexVal");
+const qTotalVal = document.getElementById("qTotalVal");
+const qTopic = document.getElementById("qTopic");
+const qEmoji = document.getElementById("qEmoji");
+const qPrompt = document.getElementById("qPrompt");
+const timerFill = document.getElementById("timerFill");
+const holdRing = document.getElementById("holdRing");
+const fingerCountEl = document.getElementById("fingerCount");
+const holdCaption = document.getElementById("holdCaption");
+const startOverlay = document.getElementById("startOverlay");
+const startBtn = document.getElementById("startBtn");
+const endOverlay = document.getElementById("endOverlay");
+const endTitle = document.getElementById("endTitle");
+const endSubtitle = document.getElementById("endSubtitle");
+const endScore = document.getElementById("endScore");
+const playAgainBtn = document.getElementById("playAgainBtn");
+const feedbackBanner = document.getElementById("feedbackBanner");
+const answerPad = document.getElementById("answerPad");
 const toggleSkeletonBtn = document.getElementById("toggleSkeleton");
 const toggleSoundBtn = document.getElementById("toggleSound");
 
-// ---------- left hand: full-screen video filter ----------
-const FILTERS = {
-  idle:  { emoji: "🖐️", label: "Normal",       color: "#7c4dff", freq: null, ctxFilter: "none" },
-  fist:  { emoji: "✊", label: "Normal",        color: "#f43f5e", freq: null, ctxFilter: "none" },
-  open:  { emoji: "✋", label: "Thermal",       color: "#f97316", freq: 220,  ctxFilter: "saturate(2.6) contrast(1.6) hue-rotate(235deg) brightness(1.08)" },
-  pinch: { emoji: "🤏", label: "Invisibility",  color: "#a3e635", freq: 294,  invisible: true },
-  point: { emoji: "☝️", label: "Invisibility",  color: "#a3e635", freq: 294,  invisible: true },
-  peace: { emoji: "✌️", label: "Mirror",        color: "#e879f9", freq: 415,  mirror: true },
-  rock:  { emoji: "🤘", label: "TV Static",     color: "#38ffd2", freq: 494,  ctxFilter: "contrast(1.2)", tvscan: true },
-  three: { emoji: "🤟", label: "Normal",        color: "#7c4dff", freq: null, ctxFilter: "none" },
-  pinky: { emoji: "🤙", label: "Normal",        color: "#7c4dff", freq: null, ctxFilter: "none" },
-  ring:  { emoji: "💍", label: "Normal",        color: "#7c4dff", freq: null, ctxFilter: "none" },
-};
-const FILTER_ORDER = ["fist", "open", "pinch", "peace", "rock"];
+// ---------- question bank (grade 6, every answer is 0-10 so it can be shown on fingers) ----------
+function randInt(min, max) { return Math.floor(Math.random() * (max - min + 1)) + min; }
+function pick(arr) { return arr[randInt(0, arr.length - 1)]; }
+const SUP = { 1: "¹", 2: "²", 3: "³", 4: "⁴", 5: "⁵" };
 
-// ---------- right hand: face filter ----------
-const FACE_FILTERS = {
-  idle:  { emoji: "🖐️", label: "None",     color: "#7c4dff", freq: null },
-  fist:  { emoji: "✊", label: "None",      color: "#f43f5e", freq: null },
-  open:  { emoji: "✋", label: "Bald",      color: "#facc15", freq: 220, mode: "bald" },
-  pinch: { emoji: "🤏", label: "Clown Nose", color: "#38bdf8", freq: 262, mode: "clownnose" },
-  point: { emoji: "☝️", label: "Big Head",  color: "#fb923c", freq: 349, mode: "bighead" },
-  peace: { emoji: "✌️", label: "Joker",     color: "#f472b6", freq: 415, mode: "joker" },
-  rock:  { emoji: "🤘", label: "Face Swap", color: "#60a5fa", freq: 494, mode: "faceswap" },
-  three: { emoji: "🤟", label: "Googly Eyes", color: "#4ade80", freq: 330, mode: "googly" },
-  pinky: { emoji: "🤙", label: "Tiny Head", color: "#eab308", freq: 392, mode: "tinyhead" },
-  ring:  { emoji: "💍", label: "Rotate Face", color: "#c084fc", freq: 349, mode: "rotateface" },
-};
-const FACE_ORDER = ["fist", "open", "point", "peace", "rock", "pinch", "three", "pinky", "ring"];
+const QUESTION_BANK = [
+  () => { const a = randInt(0, 10), b = randInt(0, 10 - a);
+    return { emoji: "➕", topic: "Addition", prompt: `${a} + ${b} = ?`, answer: a + b }; },
+  () => { const a = randInt(0, 10), b = randInt(0, a);
+    return { emoji: "➖", topic: "Subtraction", prompt: `${a} − ${b} = ?`, answer: a - b }; },
+  () => { const a = randInt(1, 3), b = randInt(1, 3); const max = a * b; const c = randInt(0, 10 - max);
+    return { emoji: "🧮", topic: "Order of Operations", prompt: `${a} × ${b} + ${c} = ?`, answer: a * b + c }; },
+  () => { const [base, exp] = pick([[2,1],[2,2],[2,3],[3,1],[3,2],[4,1],[5,1],[1,5],[10,1],[9,1]]);
+    return { emoji: "💥", topic: "Exponents", prompt: `${base}${SUP[exp]} = ?`, answer: Math.pow(base, exp) }; },
+  () => { const n = pick([1,4,9,16,25,36,49,64,81,100]);
+    return { emoji: "√", topic: "Square Roots", prompt: `√${n} = ?`, answer: Math.sqrt(n) }; },
+  () => { const [a,b,g] = pick([[8,12,4],[9,6,3],[10,15,5],[4,8,4],[6,9,3],[12,18,6],[14,21,7],[16,24,8],[9,12,3],[10,20,10],[15,25,5],[6,10,2]]);
+    return { emoji: "🔢", topic: "GCF", prompt: `What is the GCF of ${a} and ${b}?`, answer: g }; },
+  () => { const [a,b,l] = pick([[2,3,6],[2,4,4],[1,5,5],[2,5,10],[3,3,3],[1,10,10],[2,2,2],[5,10,10],[1,7,7],[2,10,10],[1,9,9],[3,6,6]]);
+    return { emoji: "🔁", topic: "LCM", prompt: `What is the LCM of ${a} and ${b}?`, answer: l }; },
+  () => { const [frac,n,ans] = pick([["1/2",8,4],["1/3",9,3],["3/4",8,6],["2/5",10,4],["1/4",8,2],["1/2",10,5],["1/5",10,2],["3/5",10,6],["1/2",6,3],["2/3",9,6],["1/4",4,1],["3/4",4,3]]);
+    return { emoji: "🍕", topic: "Fractions", prompt: `What is ${frac} of ${n}?`, answer: ans }; },
+  () => { const [p,n,ans] = pick([[10,40,4],[50,16,8],[25,24,6],[20,45,9],[10,20,2],[50,10,5],[25,16,4],[10,90,9],[50,6,3],[20,30,6],[10,50,5],[25,8,2]]);
+    return { emoji: "💯", topic: "Percentages", prompt: `What is ${p}% of ${n}?`, answer: ans }; },
+  () => { const n = pick([-7,-3,-10,-5,-8,-1,-9,-4,-6,-2]);
+    return { emoji: "🎯", topic: "Absolute Value", prompt: `|${n}| = ?`, answer: Math.abs(n) }; },
+  () => { const [a,b,ans] = pick([[-3,10,7],[-5,8,3],[-2,6,4],[-7,9,2],[-4,10,6],[-6,10,4],[-1,5,4],[-8,10,2],[-9,10,1],[-10,10,0],[-2,9,7],[-6,9,3]]);
+    return { emoji: "🧊", topic: "Integers", prompt: `${a} + ${b} = ?`, answer: ans }; },
+  () => { const [w,h,a] = pick([[2,4,8],[3,3,9],[1,7,7],[2,5,10],[1,9,9],[2,3,6],[1,10,10],[5,2,10],[1,5,5],[2,2,4],[1,6,6],[3,2,6]]);
+    return { emoji: "📐", topic: "Area", prompt: `Area of a ${w}×${h} rectangle = ?`, answer: a }; },
+  () => { const [nums, ans] = pick([[[2,4,6],4],[[1,3,5,7],4],[[5,5,5],5],[[2,4,4,6],4],[[3,7],5],[[10,10,10],10],[[1,2,3],2],[[6,8],7],[[4,6,8],6],[[0,2,4],2],[[9,9,9,9],9]]);
+    return { emoji: "📊", topic: "Averages", prompt: `Average of ${nums.join(", ")} = ?`, answer: ans }; },
+  () => { const [seq, ans] = pick([[[2,4,6,8],10],[[1,3,5,7],9],[[9,7,5,3],1],[[1,2,3,4],5],[[10,8,6],4],[[0,2,4,6],8],[[1,4,7],10],[[10,9,8,7],6],[[1,2,4],8]]);
+    return { emoji: "🔮", topic: "Patterns", prompt: `${seq.join(", ")}, __?`, answer: ans }; },
+  () => pick([
+    { emoji: "🔍", topic: "Prime Numbers", prompt: "How many prime numbers are between 1 and 10?", answer: 4 },
+    { emoji: "🔍", topic: "Prime Numbers", prompt: "How many prime numbers are between 10 and 20?", answer: 4 },
+  ]),
+  () => { const [n, c] = pick([[8,4],[12,6],[16,5],[10,4],[9,3],[18,6],[20,6],[24,8],[6,4],[15,4],[4,3],[25,3]]);
+    return { emoji: "🧩", topic: "Factors", prompt: `How many factors does ${n} have?`, answer: c }; },
+  () => { const [eq, ans] = pick([["x + 3 = 10",7],["2x = 16",8],["x − 4 = 3",7],["x + 5 = 9",4],["10 − x = 3",7],["x ÷ 2 = 4",8],["3x = 9",3],["x + 7 = 10",3],["2x = 10",5],["x − 2 = 8",10],["x + 1 = 6",5],["4x = 20",5]]);
+    return { emoji: "🧠", topic: "Algebra", prompt: `If ${eq}, what is x?`, answer: ans }; },
+  () => { const [n,d,r] = pick([[23,5,3],[29,6,5],[34,7,6],[17,4,1],[50,8,2],[41,9,5],[38,6,2],[27,4,3],[33,5,3],[45,7,3],[19,3,1],[26,4,2]]);
+    return { emoji: "🍬", topic: "Division & Remainders", prompt: `You have ${n} candies to share equally among ${d} friends. How many are left over?`, answer: r }; },
+];
 
-function buildChips(container, order, source, prefix, onPick) {
-  for (const key of order) {
-    const f = source[key];
-    const chip = document.createElement("span");
-    chip.className = "chip";
-    chip.id = prefix + key;
-    chip.textContent = `${f.emoji} ${f.label}`;
-    chip.addEventListener("click", () => onPick(key));
-    container.appendChild(chip);
-  }
+function generateQuestion() { return pick(QUESTION_BANK)(); }
+
+const GOOD_PHRASES = ["Awesome!", "Nailed it!", "You're on fire!", "Math whiz!", "Boom, correct!", "Great job!"];
+const TRY_PHRASES = ["Nice try!", "So close!", "Keep going!", "You've got this!", "Almost there!"];
+
+// ---------- answer pad (0-10) ----------
+for (let n = 0; n <= 10; n++) {
+  const chip = document.createElement("span");
+  chip.className = "chip";
+  chip.textContent = n;
+  chip.addEventListener("click", () => resolveAnswer(n));
+  answerPad.appendChild(chip);
 }
-buildChips(leftChipsEl, FILTER_ORDER, FILTERS, "lchip-", (key) => {
-  leftOverrideUntil = performance.now() + 4000;
-  applyLeftFilter(key);
-});
-buildChips(rightChipsEl, FACE_ORDER, FACE_FILTERS, "rchip-", (key) => {
-  rightOverrideUntil = performance.now() + 4000;
-  applyRightFilter(key);
-});
 
-let currentLeftGesture = null;
-let currentRightGesture = null;
-let leftOverrideUntil = 0;
-let rightOverrideUntil = 0;
-let soundOn = true;
+// ---------- game state ----------
+const TOTAL_QUESTIONS = 10;
+const HOLD_MS = 3000;
+const QUESTION_TIME_MS = 25000;
+let state = "loading"; // loading | idle | playing | feedback | ended
+let handLandmarker = null;
+let currentQuestion = null;
+let questionIndex = 0;
+let score = 0, streak = 0, lives = 3;
+let awaitingAnswer = false;
+let questionStartTime = 0;
+let holdCount = null, holdStart = 0;
 let skeletonOn = true;
+let soundOn = true;
 let audioCtx = null;
-
-// gesture must be held this long before switching (ignores brief flicker from hand movement)
-const GESTURE_STABILITY_MS = 220;
-// keep the current filter this long after the hand disappears (ignores brief tracking dropouts)
-const HAND_LOST_GRACE_MS = 700;
-let leftLostSince = null;
-let rightLostSince = null;
-
-function stableApply(lm, currentGesture, pendingRef, applyFn, now) {
-  const g = classifyGesture(lm);
-  if (g === currentGesture) {
-    pendingRef.gesture = null;
-    return;
-  }
-  if (g !== pendingRef.gesture) {
-    pendingRef.gesture = g;
-    pendingRef.since = now;
-  } else if (now - pendingRef.since >= GESTURE_STABILITY_MS) {
-    applyFn(g);
-    pendingRef.gesture = null;
-  }
-}
-
-const leftPending = { gesture: null, since: 0 };
-const rightPending = { gesture: null, since: 0 };
 
 function ensureAudio() {
   if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
   return audioCtx;
 }
-function playTone(freq) {
+function playTone(freq, delay = 0) {
   if (!soundOn || !freq) return;
   try {
     const ctxA = ensureAudio();
+    const t0 = ctxA.currentTime + delay;
     const osc = ctxA.createOscillator();
     const gain = ctxA.createGain();
     osc.type = "sine";
     osc.frequency.value = freq;
-    gain.gain.setValueAtTime(0.0001, ctxA.currentTime);
-    gain.gain.exponentialRampToValueAtTime(0.12, ctxA.currentTime + 0.02);
-    gain.gain.exponentialRampToValueAtTime(0.0001, ctxA.currentTime + 0.28);
+    gain.gain.setValueAtTime(0.0001, t0);
+    gain.gain.exponentialRampToValueAtTime(0.12, t0 + 0.02);
+    gain.gain.exponentialRampToValueAtTime(0.0001, t0 + 0.28);
     osc.connect(gain).connect(ctxA.destination);
-    osc.start();
-    osc.stop(ctxA.currentTime + 0.3);
+    osc.start(t0);
+    osc.stop(t0 + 0.3);
   } catch (e) { /* audio not ready yet */ }
 }
 
-function hexToRgba(hex, a) {
-  const n = parseInt(hex.slice(1), 16);
-  const r = (n >> 16) & 255, g = (n >> 8) & 255, b = n & 255;
-  return `rgba(${r},${g},${b},${a})`;
+toggleSkeletonBtn.addEventListener("click", () => {
+  skeletonOn = !skeletonOn;
+  toggleSkeletonBtn.classList.toggle("off", !skeletonOn);
+  if (!skeletonOn) octx.clearRect(0, 0, overlay.width, overlay.height);
+});
+toggleSoundBtn.addEventListener("click", () => {
+  soundOn = !soundOn;
+  toggleSoundBtn.textContent = soundOn ? "🔊" : "🔇";
+  toggleSoundBtn.classList.toggle("off", !soundOn);
+});
+
+function updateHUD() {
+  scoreVal.textContent = score;
+  streakVal.textContent = streak;
+  qIndexVal.textContent = Math.min(questionIndex, TOTAL_QUESTIONS);
+  qTotalVal.textContent = TOTAL_QUESTIONS;
+  heartsRow.textContent = "❤️".repeat(Math.max(0, lives)) + "🤍".repeat(Math.max(0, 3 - lives));
 }
 
-function applyLeftFilter(name) {
-  if (name === currentLeftGesture) return;
-  currentLeftGesture = name;
-  const f = FILTERS[name];
-  leftPill.style.setProperty("--pill-color", f.color);
-  leftPill.style.setProperty("--pill-color-soft", hexToRgba(f.color, 0.6));
-  leftPill.classList.toggle("active", name !== "idle" && name !== "fist");
-  leftEmoji.textContent = f.emoji;
-  leftLabel.textContent = f.label;
-  for (const key of FILTER_ORDER) {
-    const chip = document.getElementById("lchip-" + key);
-    if (chip) chip.classList.toggle("active", key === name);
-  }
-  playTone(f.freq);
+function setHoldProgress(p) {
+  holdRing.style.setProperty("--p", p);
 }
 
-function applyRightFilter(name) {
-  if (name === currentRightGesture) return;
-  currentRightGesture = name;
-  const f = FACE_FILTERS[name];
-  rightPill.style.setProperty("--pill-color", f.color);
-  rightPill.style.setProperty("--pill-color-soft", hexToRgba(f.color, 0.6));
-  rightPill.classList.toggle("active", name !== "idle" && name !== "fist");
-  rightEmoji.textContent = f.emoji;
-  rightLabel.textContent = f.label;
-  for (const key of FACE_ORDER) {
-    const chip = document.getElementById("rchip-" + key);
-    if (chip) chip.classList.toggle("active", key === name);
-  }
-  playTone(f.freq);
+function nextQuestion() {
+  currentQuestion = generateQuestion();
+  questionIndex++;
+  updateHUD();
+  qTopic.textContent = currentQuestion.topic;
+  qEmoji.textContent = currentQuestion.emoji;
+  qPrompt.textContent = currentQuestion.prompt;
+  questionStartTime = performance.now();
+  awaitingAnswer = true;
+  holdCount = null;
+  setHoldProgress(0);
+  feedbackBanner.className = "feedback-banner";
+  feedbackBanner.textContent = "";
+  timerFill.style.background = "linear-gradient(90deg, #a78bfa, #f472b6)";
 }
+
+function showFeedback(correct, text) {
+  feedbackBanner.textContent = (correct ? "✅ " : "❌ ") + text;
+  feedbackBanner.className = "feedback-banner " + (correct ? "good" : "bad");
+}
+
+function resolveAnswer(given) {
+  if (!awaitingAnswer || state !== "playing") return;
+  awaitingAnswer = false;
+  state = "feedback";
+  const correct = given === currentQuestion.answer;
+  if (correct) {
+    score += 10 + streak * 2;
+    streak++;
+    showFeedback(true, pick(GOOD_PHRASES));
+    burstConfetti();
+    playTone(523);
+    playTone(784, 0.12);
+  } else {
+    lives--;
+    streak = 0;
+    const reason = given === null ? "Time's up!" : "Not quite.";
+    showFeedback(false, `${reason} The answer was ${currentQuestion.answer}. ${pick(TRY_PHRASES)}`);
+    playTone(160);
+  }
+  updateHUD();
+  setTimeout(() => {
+    if (lives <= 0) return gameOver();
+    if (questionIndex >= TOTAL_QUESTIONS) return victory();
+    state = "playing";
+    nextQuestion();
+  }, 1700);
+}
+
+function gameOver() {
+  state = "ended";
+  endTitle.textContent = "💫 Game Over";
+  endSubtitle.textContent = "Out of lives — but every math ninja falls sometimes!";
+  endScore.textContent = `⭐ ${score} points`;
+  endOverlay.style.display = "flex";
+}
+
+function victory() {
+  state = "ended";
+  endTitle.textContent = "🏆 Challenge Complete!";
+  endSubtitle.textContent = "You finished all 10 questions like a true Grade 6 math champion!";
+  endScore.textContent = `⭐ ${score} points`;
+  endOverlay.style.display = "flex";
+  burstConfetti(90);
+}
+
+playAgainBtn.addEventListener("click", () => {
+  endOverlay.style.display = "none";
+  score = 0; streak = 0; lives = 3; questionIndex = 0;
+  updateHUD();
+  state = "playing";
+  nextQuestion();
+  requestAnimationFrame(loop);
+});
 
 // ---------- hand tracking geometry ----------
-const TIP = { thumb: 4, index: 8, middle: 12, ring: 16, pinky: 20 };
-const PIP = { index: 6, middle: 10, ring: 14, pinky: 18 };
 const CONNECTIONS = [
   [0,1],[1,2],[2,3],[3,4],
   [0,5],[5,6],[6,7],[7,8],
@@ -443,6 +619,8 @@ const CONNECTIONS = [
   [13,17],[17,18],[18,19],[19,20],
   [0,17],
 ];
+const TIP = { index: 8, middle: 12, ring: 16, pinky: 20 };
+const PIP = { index: 6, middle: 10, ring: 14, pinky: 18 };
 
 function dist(a, b) {
   return Math.hypot(a.x - b.x, a.y - b.y, (a.z || 0) - (b.z || 0));
@@ -450,31 +628,18 @@ function dist(a, b) {
 function isExtended(lm, tipIdx, pipIdx, wrist) {
   return dist(lm[tipIdx], wrist) > dist(lm[pipIdx], wrist) * 1.15;
 }
-function classifyGesture(lm) {
+function countFingers(lm) {
   const wrist = lm[0];
   const indexExt = isExtended(lm, TIP.index, PIP.index, wrist);
   const middleExt = isExtended(lm, TIP.middle, PIP.middle, wrist);
   const ringExt = isExtended(lm, TIP.ring, PIP.ring, wrist);
   const pinkyExt = isExtended(lm, TIP.pinky, PIP.pinky, wrist);
-  const pinchDist = dist(lm[TIP.thumb], lm[TIP.index]);
-  const handSpan = dist(lm[0], lm[9]);
-  const pinching = pinchDist < handSpan * 0.45;
-  const extendedCount = [indexExt, middleExt, ringExt, pinkyExt].filter(Boolean).length;
-
-  if (pinching) return "pinch";
-  if (indexExt && middleExt && !ringExt && !pinkyExt) return "peace";
-  if (indexExt && pinkyExt && !middleExt && !ringExt) return "rock";
-  if (extendedCount === 0) return "fist";
-  if (indexExt && middleExt && ringExt && pinkyExt) return "open";
-  if (indexExt && middleExt && ringExt && !pinkyExt) return "three";
-  if (pinkyExt && extendedCount === 1) return "pinky";
-  if (indexExt && extendedCount === 1) return "point";
-  if (ringExt && extendedCount === 1) return "ring";
-  return "idle";
+  // thumb: compare its distance from the pinky-base knuckle against the thumb's own base joint
+  const thumbExt = dist(lm[4], lm[17]) > dist(lm[3], lm[17]);
+  return (thumbExt ? 1 : 0) + (indexExt ? 1 : 0) + (middleExt ? 1 : 0) + (ringExt ? 1 : 0) + (pinkyExt ? 1 : 0);
 }
 
-function drawSkeleton(lm, w, h, tag) {
-  if (!skeletonOn) return;
+function drawSkeleton(lm, w, h) {
   octx.lineWidth = 3;
   octx.strokeStyle = "rgba(255,255,255,0.75)";
   octx.shadowColor = "#ffffff";
@@ -494,323 +659,115 @@ function drawSkeleton(lm, w, h, tag) {
     octx.arc(p.x * w, p.y * h, isTip ? 5 : 3, 0, Math.PI * 2);
     octx.fill();
   }
-  const wx = lm[0].x * w, wy = lm[0].y * h;
-  octx.save();
-  octx.shadowBlur = 0;
-  octx.translate(wx, wy + 26);
-  octx.scale(-1, 1);
-  octx.font = "700 14px system-ui, sans-serif";
-  octx.fillStyle = "rgba(255,255,255,0.85)";
-  octx.textAlign = "center";
-  octx.fillText(tag, 0, 0);
-  octx.restore();
 }
 
-// ---------- invisibility: keep a running snapshot of the room whenever no hands are up ----------
-const bgCanvas = document.createElement("canvas");
-const bgctx = bgCanvas.getContext("2d");
-let bgReady = false;
-
-function captureBackground(w, h) {
-  if (bgCanvas.width !== w || bgCanvas.height !== h) {
-    bgCanvas.width = w;
-    bgCanvas.height = h;
-  }
-  bgctx.drawImage(video, 0, 0, w, h);
-  bgReady = true;
+// ---------- confetti ----------
+const confettiCanvas = document.getElementById("confettiCanvas");
+const cctx = confettiCanvas.getContext("2d");
+let confettiParticles = [];
+let confettiRAF = null;
+function resizeConfetti() {
+  confettiCanvas.width = window.innerWidth;
+  confettiCanvas.height = window.innerHeight;
 }
+window.addEventListener("resize", resizeConfetti);
+resizeConfetti();
 
-// ---------- TV static: scanlines + noise specks + a bright rolling bar ----------
-function drawTVStatic(w, h) {
-  fxctx.save();
-  fxctx.fillStyle = "rgba(0,0,0,0.18)";
-  for (let sy = 0; sy < h; sy += 4) {
-    fxctx.fillRect(0, sy, w, 2);
-  }
-  fxctx.fillStyle = "rgba(255,255,255,0.5)";
-  const specks = Math.max(30, Math.round((w * h) / 900));
-  for (let i = 0; i < specks; i++) {
-    fxctx.fillRect(Math.random() * w, Math.random() * h, 2, 2);
-  }
-  const cycle = (performance.now() / 2600) % 1;
-  const rollY = h * cycle;
-  const grad = fxctx.createLinearGradient(0, rollY - 14, 0, rollY + 14);
-  grad.addColorStop(0, "rgba(120,220,255,0)");
-  grad.addColorStop(0.5, "rgba(120,220,255,0.5)");
-  grad.addColorStop(1, "rgba(120,220,255,0)");
-  fxctx.fillStyle = grad;
-  fxctx.fillRect(0, rollY - 14, w, 28);
-  fxctx.restore();
-}
-
-// ---------- render the left-hand video filter, full screen ----------
-function renderVideoFilter(w, h) {
-  const name = currentLeftGesture || "idle";
-  const meta = FILTERS[name];
-
-  if (meta.mirror) {
-    const halfW = w / 2;
-    const srcHalfW = video.videoWidth / 2;
-    fxctx.drawImage(video, 0, 0, srcHalfW, video.videoHeight, 0, 0, halfW, h);
-    fxctx.save();
-    fxctx.translate(w, 0);
-    fxctx.scale(-1, 1);
-    fxctx.drawImage(video, 0, 0, srcHalfW, video.videoHeight, 0, 0, halfW, h);
-    fxctx.restore();
-  } else if (meta.invisible) {
-    fxctx.drawImage(bgReady ? bgCanvas : video, 0, 0, w, h);
-  } else {
-    fxctx.filter = meta.ctxFilter || "none";
-    fxctx.drawImage(video, 0, 0, w, h);
-    fxctx.filter = "none";
-  }
-
-  if (meta.tvscan) drawTVStatic(w, h);
-}
-
-// ---------- face filters, with feathered (soft-edge) blending ----------
-// canonical MediaPipe face-mesh landmark indices used below:
-// 1 = nose tip, 10 = forehead/hairline, 152 = chin, 234/454 = cheeks (face width),
-// 61/291 = mouth corners, 33/263 = outer eye corners
-function getFaceBox(lm, w, h) {
-  const nose = lm[1], top = lm[10], chin = lm[152], rightCheek = lm[234], leftCheek = lm[454];
-  return {
-    cx: nose.x * w,
-    cy: nose.y * h,
-    width: Math.abs(leftCheek.x - rightCheek.x) * w,
-    height: Math.abs(chin.y - top.y) * h,
-    top, chin, rightCheek, leftCheek,
-  };
-}
-
-// reusable offscreen canvas so we can feather edges without allocating one per frame
-const featherCanvas = document.createElement("canvas");
-const featherCtx = featherCanvas.getContext("2d");
-
-function drawFeathered(w, h, cx, cy, rx, ry, drawFn) {
-  if (featherCanvas.width !== w || featherCanvas.height !== h) {
-    featherCanvas.width = w;
-    featherCanvas.height = h;
-  }
-  featherCtx.clearRect(0, 0, w, h);
-  drawFn(featherCtx);
-
-  featherCtx.save();
-  featherCtx.globalCompositeOperation = "destination-in";
-  featherCtx.translate(cx, cy);
-  featherCtx.scale(1, ry / rx);
-  featherCtx.translate(-cx, -cy);
-  const grad = featherCtx.createRadialGradient(cx, cy, rx * 0.55, cx, cy, rx * 1.05);
-  grad.addColorStop(0, "rgba(255,255,255,1)");
-  grad.addColorStop(1, "rgba(255,255,255,0)");
-  featherCtx.fillStyle = grad;
-  featherCtx.fillRect(cx - rx * 1.2, cy - rx * 1.2, rx * 2.4, rx * 2.4);
-  featherCtx.restore();
-
-  fxctx.drawImage(featherCanvas, 0, 0);
-}
-
-function drawBald(lm, w, h) {
-  const box = getFaceBox(lm, w, h);
-  const topX = box.top.x * w, topY = box.top.y * h;
-  let skin = "rgb(210,170,140)";
-  try {
-    const px = fxctx.getImageData(Math.max(0, Math.min(w - 1, topX)), Math.max(0, Math.min(h - 1, topY + 8)), 1, 1).data;
-    skin = `rgb(${px[0]},${px[1]},${px[2]})`;
-  } catch (e) { /* fall back to default tone */ }
-  const capW = box.width * 1.1, capH = box.height * 0.95;
-  const cy = topY - capH * 0.32;
-  drawFeathered(w, h, topX, cy, capW / 2, capH / 2, (ctx) => {
-    ctx.beginPath();
-    ctx.ellipse(topX, cy, capW / 2, capH / 2, 0, 0, Math.PI * 2);
-    ctx.fillStyle = skin;
-    ctx.fill();
-  });
-}
-
-function drawBigHead(lm, w, h) {
-  const box = getFaceBox(lm, w, h);
-  const scale = 1.5;
-  const srcW = box.width * 1.35, srcH = box.height * 1.5;
-  const dstW = srcW * scale, dstH = srcH * scale;
-  drawFeathered(w, h, box.cx, box.cy, dstW / 2, dstH / 2, (ctx) => {
-    ctx.drawImage(video, box.cx - srcW / 2, box.cy - srcH / 2, srcW, srcH, box.cx - dstW / 2, box.cy - dstH / 2, dstW, dstH);
-  });
-}
-
-function drawClownNose(lm, w, h) {
-  const box = getFaceBox(lm, w, h);
-  const nose = lm[1];
-  const nx = nose.x * w, ny = nose.y * h;
-  const r = box.width * 0.14;
-  drawFeathered(w, h, nx, ny, r * 1.3, r * 1.3, (ctx) => {
-    const grad = ctx.createRadialGradient(nx - r * 0.3, ny - r * 0.3, r * 0.1, nx, ny, r);
-    grad.addColorStop(0, "#ff8080");
-    grad.addColorStop(1, "#c81e3a");
-    ctx.beginPath();
-    ctx.arc(nx, ny, r, 0, Math.PI * 2);
-    ctx.fillStyle = grad;
-    ctx.fill();
-  });
-}
-
-function drawGoogly(lm, w, h) {
-  const box = getFaceBox(lm, w, h);
-  const r = box.width * 0.16;
-  const t = performance.now() / 260;
-  for (const e of [lm[33], lm[263]]) {
-    const ex = e.x * w, ey = e.y * h;
-    drawFeathered(w, h, ex, ey, r * 1.15, r * 1.15, (ctx) => {
-      ctx.beginPath();
-      ctx.arc(ex, ey, r, 0, Math.PI * 2);
-      ctx.fillStyle = "#fff";
-      ctx.fill();
-      ctx.lineWidth = 2;
-      ctx.strokeStyle = "rgba(0,0,0,0.35)";
-      ctx.stroke();
-      const pdx = Math.sin(t + ex) * r * 0.35;
-      const pdy = Math.cos(t * 1.3 + ey) * r * 0.35;
-      ctx.beginPath();
-      ctx.arc(ex + pdx, ey + pdy, r * 0.4, 0, Math.PI * 2);
-      ctx.fillStyle = "#1a1a1a";
-      ctx.fill();
+function burstConfetti(count = 45) {
+  const colors = ["#a78bfa", "#f472b6", "#60a5fa", "#4ade80", "#facc15"];
+  for (let i = 0; i < count; i++) {
+    confettiParticles.push({
+      x: confettiCanvas.width / 2 + (Math.random() - 0.5) * 200,
+      y: confettiCanvas.height * 0.35,
+      vx: (Math.random() - 0.5) * 8,
+      vy: -Math.random() * 8 - 4,
+      size: 5 + Math.random() * 5,
+      color: colors[Math.floor(Math.random() * colors.length)],
+      rot: Math.random() * Math.PI,
+      vrot: (Math.random() - 0.5) * 0.3,
+      life: 0,
     });
   }
+  if (!confettiRAF) confettiRAF = requestAnimationFrame(confettiLoop);
 }
-
-function drawTinyHead(lm, w, h) {
-  const box = getFaceBox(lm, w, h);
-  const topX = box.top.x * w, topY = box.top.y * h;
-  let skin = "rgb(210,170,140)";
-  try {
-    const px = fxctx.getImageData(Math.max(0, Math.min(w - 1, topX)), Math.max(0, Math.min(h - 1, topY + 8)), 1, 1).data;
-    skin = `rgb(${px[0]},${px[1]},${px[2]})`;
-  } catch (e) { /* fall back to default tone */ }
-
-  drawFeathered(w, h, box.cx, box.cy, box.width * 0.75, box.height * 0.8, (ctx) => {
-    ctx.fillStyle = skin;
-    ctx.fillRect(box.cx - box.width, box.cy - box.height, box.width * 2, box.height * 2);
+function confettiLoop() {
+  cctx.clearRect(0, 0, confettiCanvas.width, confettiCanvas.height);
+  confettiParticles.forEach((p) => {
+    p.vy += 0.25;
+    p.x += p.vx;
+    p.y += p.vy;
+    p.rot += p.vrot;
+    p.life++;
+    cctx.save();
+    cctx.translate(p.x, p.y);
+    cctx.rotate(p.rot);
+    cctx.fillStyle = p.color;
+    cctx.fillRect(-p.size / 2, -p.size / 2, p.size, p.size);
+    cctx.restore();
   });
-
-  const scale = 0.5;
-  const srcW = box.width * 1.35, srcH = box.height * 1.5;
-  const dstW = srcW * scale, dstH = srcH * scale;
-  drawFeathered(w, h, box.cx, box.cy, dstW / 2, dstH / 2, (ctx) => {
-    ctx.drawImage(video, box.cx - srcW / 2, box.cy - srcH / 2, srcW, srcH, box.cx - dstW / 2, box.cy - dstH / 2, dstW, dstH);
-  });
-}
-
-function drawRotateFace(lm, w, h) {
-  const box = getFaceBox(lm, w, h);
-  const angle = (performance.now() / 900) % (Math.PI * 2);
-  const srcW = box.width * 1.4, srcH = box.height * 1.5;
-  const maskR = Math.max(srcW, srcH) * 0.55;
-  drawFeathered(w, h, box.cx, box.cy, maskR, maskR, (ctx) => {
-    ctx.save();
-    ctx.translate(box.cx, box.cy);
-    ctx.rotate(angle);
-    ctx.drawImage(video, box.cx - srcW / 2, box.cy - srcH / 2, srcW, srcH, -srcW / 2, -srcH / 2, srcW, srcH);
-    ctx.restore();
-  });
-}
-
-function drawJoker(lm, w, h) {
-  const box = getFaceBox(lm, w, h);
-  const mouthL = lm[61], mouthR = lm[291];
-  const eyeL = lm[33], eyeR = lm[263];
-  const mlx = mouthL.x * w, mly = mouthL.y * h;
-  const mrx = mouthR.x * w, mry = mouthR.y * h;
-
-  drawFeathered(w, h, box.cx, box.cy, box.width * 0.62, box.height * 0.62, (ctx) => {
-    ctx.fillStyle = "rgba(255,255,255,0.35)";
-    ctx.fillRect(box.cx - box.width, box.cy - box.height, box.width * 2, box.height * 2);
-  });
-
-  fxctx.strokeStyle = "rgba(200,20,45,0.9)";
-  fxctx.lineWidth = 6;
-  fxctx.lineCap = "round";
-  fxctx.beginPath();
-  fxctx.moveTo(mlx, mly);
-  fxctx.quadraticCurveTo(mlx - box.width * 0.12, mly - box.height * 0.05, mlx - box.width * 0.2, mly - box.height * 0.2);
-  fxctx.stroke();
-  fxctx.beginPath();
-  fxctx.moveTo(mrx, mry);
-  fxctx.quadraticCurveTo(mrx + box.width * 0.12, mry - box.height * 0.05, mrx + box.width * 0.2, mry - box.height * 0.2);
-  fxctx.stroke();
-
-  fxctx.fillStyle = "rgba(35,10,45,0.85)";
-  for (const e of [eyeL, eyeR]) {
-    const ex = e.x * w, ey = e.y * h;
-    fxctx.beginPath();
-    fxctx.moveTo(ex, ey - 10);
-    fxctx.lineTo(ex + 8, ey);
-    fxctx.lineTo(ex, ey + 10);
-    fxctx.lineTo(ex - 8, ey);
-    fxctx.closePath();
-    fxctx.fill();
+  confettiParticles = confettiParticles.filter((p) => p.y < confettiCanvas.height + 30 && p.life < 240);
+  if (confettiParticles.length > 0) {
+    confettiRAF = requestAnimationFrame(confettiLoop);
+  } else {
+    confettiRAF = null;
   }
 }
 
-function faceAngle(box) {
-  const dx = box.leftCheek.x - box.rightCheek.x;
-  const dy = box.leftCheek.y - box.rightCheek.y;
-  return Math.atan2(dy, dx);
-}
+// ---------- main loop ----------
+function loop() {
+  if (state !== "playing" && state !== "feedback") return;
+  const now = performance.now();
+  const w = overlay.width, h = overlay.height;
+  const result = handLandmarker.detectForVideo(video, now);
 
-function pasteFace(w, h, srcBox, dstBox) {
-  const scale = dstBox.width / srcBox.width;
-  const rot = faceAngle(dstBox) - faceAngle(srcBox);
-  const sw = srcBox.width * 1.4, sh = srcBox.height * 1.5;
-  drawFeathered(w, h, dstBox.cx, dstBox.cy, dstBox.width * 0.58, dstBox.height * 0.65, (ctx) => {
-    ctx.save();
-    ctx.translate(dstBox.cx, dstBox.cy);
-    ctx.rotate(rot);
-    ctx.drawImage(video, srcBox.cx - sw / 2, srcBox.cy - sh / 2, sw, sh, (-sw / 2) * scale, (-sh / 2) * scale, sw * scale, sh * scale);
-    ctx.restore();
-  });
-}
+  octx.clearRect(0, 0, w, h);
+  let total = 0;
+  let handsDetected = 0;
+  if (result.landmarks && result.landmarks.length > 0) {
+    for (const lm of result.landmarks) {
+      handsDetected++;
+      if (skeletonOn) drawSkeleton(lm, w, h);
+      total += countFingers(lm);
+    }
+  }
+  fingerCountEl.textContent = handsDetected ? total : "–";
+  liveText.textContent = handsDetected ? `Live · ${handsDetected} hand${handsDetected > 1 ? "s" : ""}` : "Live";
 
-function renderFaceFilter(faceLandmarks, w, h) {
-  const name = currentRightGesture || "idle";
-  const meta = FACE_FILTERS[name];
-  if (!meta || !meta.mode || faceLandmarks.length === 0) return;
+  if (state === "playing") {
+    const elapsed = now - questionStartTime;
+    const remain = Math.max(0, 1 - elapsed / QUESTION_TIME_MS);
+    timerFill.style.width = remain * 100 + "%";
+    if (remain <= 0.25) timerFill.style.background = "linear-gradient(90deg, #f87171, #fca5a5)";
+    if (awaitingAnswer && remain <= 0) {
+      resolveAnswer(null);
+    }
 
-  if (meta.mode === "faceswap") {
-    if (faceLandmarks.length < 2) return;
-    const boxA = getFaceBox(faceLandmarks[0], w, h);
-    const boxB = getFaceBox(faceLandmarks[1], w, h);
-    pasteFace(w, h, boxA, boxB);
-    pasteFace(w, h, boxB, boxA);
-    return;
+    if (awaitingAnswer && handsDetected > 0) {
+      holdCaption.textContent = "Hold steady…";
+      if (holdCount === total) {
+        const p = Math.min(1, (now - holdStart) / HOLD_MS);
+        setHoldProgress(p);
+        if (p >= 1) resolveAnswer(total);
+      } else {
+        holdCount = total;
+        holdStart = now;
+        setHoldProgress(0);
+      }
+    } else {
+      holdCount = null;
+      setHoldProgress(0);
+      if (awaitingAnswer) holdCaption.textContent = "Show me your answer!";
+    }
   }
 
-  for (const lm of faceLandmarks) {
-    if (meta.mode === "bald") drawBald(lm, w, h);
-    else if (meta.mode === "bighead") drawBigHead(lm, w, h);
-    else if (meta.mode === "joker") drawJoker(lm, w, h);
-    else if (meta.mode === "clownnose") drawClownNose(lm, w, h);
-    else if (meta.mode === "googly") drawGoogly(lm, w, h);
-    else if (meta.mode === "tinyhead") drawTinyHead(lm, w, h);
-    else if (meta.mode === "rotateface") drawRotateFace(lm, w, h);
-  }
+  requestAnimationFrame(loop);
 }
 
-toggleSkeletonBtn.addEventListener("click", () => {
-  skeletonOn = !skeletonOn;
-  toggleSkeletonBtn.classList.toggle("off", !skeletonOn);
-  if (!skeletonOn) octx.clearRect(0, 0, overlay.width, overlay.height);
-});
-toggleSoundBtn.addEventListener("click", () => {
-  soundOn = !soundOn;
-  toggleSoundBtn.textContent = soundOn ? "🔊" : "🔇";
-  toggleSoundBtn.classList.toggle("off", !soundOn);
-});
-
-async function main() {
+async function loadModel() {
   const fileset = await FilesetResolver.forVisionTasks(
     "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.14/wasm"
   );
-  const handLandmarker = await HandLandmarker.createFromOptions(fileset, {
+  handLandmarker = await HandLandmarker.createFromOptions(fileset, {
     baseOptions: {
       modelAssetPath:
         "https://storage.googleapis.com/mediapipe-models/hand_landmarker/hand_landmarker/float16/1/hand_landmarker.task",
@@ -819,88 +776,42 @@ async function main() {
     runningMode: "VIDEO",
     numHands: 2,
   });
-
-  const faceLandmarker = await FaceLandmarker.createFromOptions(fileset, {
-    baseOptions: {
-      modelAssetPath:
-        "https://storage.googleapis.com/mediapipe-models/face_landmarker/face_landmarker/float16/1/face_landmarker.task",
-      delegate: "GPU",
-    },
-    runningMode: "VIDEO",
-    numFaces: 2,
-  });
-
-  applyLeftFilter("idle");
-  applyRightFilter("idle");
-
-  const stream = await navigator.mediaDevices.getUserMedia({ video: { width: 640, height: 480 } });
-  video.srcObject = stream;
-  await new Promise((res) => (video.onloadedmetadata = res));
-  video.play();
-
-  fx.width = overlay.width = video.videoWidth;
-  fx.height = overlay.height = video.videoHeight;
-
-  statusEl.textContent = "Left hand = video filter · Right hand = face filter";
-  liveText.textContent = "Live";
-  liveDot.classList.add("live");
-
-  function loop() {
-    const w = overlay.width, h = overlay.height;
-    const now = performance.now();
-    const result = handLandmarker.detectForVideo(video, now);
-    const faceResult = faceLandmarker.detectForVideo(video, now);
-    const faceLandmarks = faceResult.faceLandmarks || [];
-
-    let leftLm = null, rightLm = null;
-    if (result.landmarks && result.landmarks.length > 0) {
-      for (let i = 0; i < result.landmarks.length; i++) {
-        const raw = result.handednesses[i][0].categoryName; // "Left"/"Right" of the physical hand
-        const displaySide = raw === "Left" ? "left" : "right";
-        if (displaySide === "left" && !leftLm) leftLm = result.landmarks[i];
-        else if (displaySide === "right" && !rightLm) rightLm = result.landmarks[i];
-      }
-    }
-
-    octx.clearRect(0, 0, w, h);
-    if (leftLm) drawSkeleton(leftLm, w, h, "L");
-    if (rightLm) drawSkeleton(rightLm, w, h, "R");
-
-    if (leftLm) {
-      leftLostSince = null;
-      stableApply(leftLm, currentLeftGesture, leftPending, applyLeftFilter, now);
-    } else if (leftLostSince === null) {
-      leftLostSince = now;
-    } else if (now - leftLostSince > HAND_LOST_GRACE_MS && now > leftOverrideUntil) {
-      applyLeftFilter("idle");
-    }
-
-    if (rightLm) {
-      rightLostSince = null;
-      stableApply(rightLm, currentRightGesture, rightPending, applyRightFilter, now);
-    } else if (rightLostSince === null) {
-      rightLostSince = now;
-    } else if (now - rightLostSince > HAND_LOST_GRACE_MS && now > rightOverrideUntil) {
-      applyRightFilter("idle");
-    }
-
-    const handCount = (leftLm ? 1 : 0) + (rightLm ? 1 : 0);
-    liveText.textContent = handCount === 0 ? "Live" : handCount === 1 ? "Live · 1 hand" : "Live · 2 hands";
-
-    // keep a clean snapshot of the room whenever hands are out of frame, for the invisibility filter
-    if (handCount === 0) captureBackground(w, h);
-
-    fxctx.filter = "none";
-    renderVideoFilter(w, h);
-    renderFaceFilter(faceLandmarks, w, h);
-    requestAnimationFrame(loop);
-  }
-  loop();
+  state = "idle";
+  statusEl.textContent = "Model ready — start the camera to play!";
+  startBtn.disabled = false;
+  startBtn.textContent = "🎥 Start Challenge";
 }
 
-main().catch((err) => {
-  statusEl.textContent = "Error: " + err.message;
-  liveText.textContent = "Error";
+startBtn.addEventListener("click", async () => {
+  startBtn.disabled = true;
+  startBtn.textContent = "Starting camera…";
+  try {
+    const stream = await navigator.mediaDevices.getUserMedia({ video: { width: 640, height: 480 } });
+    video.srcObject = stream;
+    await new Promise((res) => (video.onloadedmetadata = res));
+    video.play();
+    overlay.width = video.videoWidth;
+    overlay.height = video.videoHeight;
+    liveDot.classList.add("live");
+    startOverlay.style.display = "none";
+    statusEl.textContent = "Left hand or right hand — show your answer with fingers!";
+    score = 0; streak = 0; lives = 3; questionIndex = 0;
+    updateHUD();
+    state = "playing";
+    nextQuestion();
+    requestAnimationFrame(loop);
+  } catch (err) {
+    statusEl.textContent = "Camera unavailable — you can still tap the number chips below to play.";
+    startOverlay.style.display = "none";
+    score = 0; streak = 0; lives = 3; questionIndex = 0;
+    updateHUD();
+    state = "playing";
+    nextQuestion();
+  }
+});
+
+loadModel().catch((err) => {
+  statusEl.textContent = "Error loading model: " + err.message;
   console.error(err);
 });
 </script>
